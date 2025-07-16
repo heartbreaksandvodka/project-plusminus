@@ -1,48 +1,147 @@
-# Full Stack Django JWT React Authentication
+# Project Plus-Minus 🚀
 
-A complete authentication system built with Django REST Framework, JWT tokens, React.js, TypeScript, and Axios.
+A full-stack authentication system built with Django REST Framework and React TypeScript, featuring comprehensive user management, password reset functionality, and modern UI design.
 
-## Features
+## 🌟 Features
 
-- **Backend (Django)**:
-  - Django REST Framework API
-  - JWT Authentication with refresh tokens
-  - Custom User model with email login
-  - Token blacklisting on logout
-  - CORS configuration
-  - User registration, login, logout endpoints
-  - Protected dashboard endpoint
+### Backend (Django)
+- **JWT Authentication** with refresh tokens
+- **Custom User Model** with extended profile fields
+- **Password Reset System** with secure token-based reset
+- **Enhanced Dashboard API** with user statistics
+- **CORS Configuration** for frontend integration
+- **Token Blacklisting** on logout for security
+- **RESTful API** endpoints for all authentication operations
 
-- **Frontend (React)**:
-  - React with TypeScript
-  - Modern, responsive UI design
-  - React Router for navigation
-  - Axios for HTTP requests
+### Frontend (React + TypeScript)
+- **Modern UI Design** with responsive layout
+- **Organized Component Structure** with dedicated folders
+- **Authentication Context** for global state management
+- **Protected Routes** with authentication checks
+- **Password Reset Flow** with email-based reset
+- **Profile Management** with update capabilities
+- **Sidebar Navigation** with user information
+- **Common Components** for reusability (Button, LoadingSpinner)
+- **Centralized API Services** with Axios interceptors
   - JWT token management with auto-refresh
   - Authentication context and protected routes
   - Beautiful gradient design
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 project-plusminus/
-├── backend/
+├── .venv/                          # Python virtual environment
+├── backend/                        # Django REST API
 │   ├── manage.py
 │   ├── requirements.txt
-│   ├── .env
-│   ├── authproject/
+│   ├── db.sqlite3
+│   ├── authproject/               # Django project settings
 │   │   ├── settings.py
 │   │   ├── urls.py
 │   │   └── ...
-│   └── authentication/
-│       ├── models.py
-│       ├── views.py
-│       ├── serializers.py
-│       ├── urls.py
-│       └── ...
-└── frontend/
+│   └── authentication/            # Authentication app
+│       ├── models.py             # User model & password reset
+│       ├── views.py              # API endpoints
+│       ├── serializers.py        # Data serialization
+│       ├── urls.py               # URL routing
+│       └── migrations/           # Database migrations
+└── frontend/                      # React TypeScript app
     ├── package.json
     ├── src/
+    │   ├── components/           # Organized components
+    │   │   ├── Layout/          # Main layout wrapper
+    │   │   ├── Sidebar/         # Navigation sidebar
+    │   │   ├── ProtectedRoute/  # Route protection
+    │   │   └── common/          # Reusable components
+    │   ├── pages/               # Page components
+    │   ├── services/            # API services
+    │   │   ├── api/            # Authentication API
+    │   │   └── utils/          # Helper utilities
+    │   ├── contexts/            # React contexts
+    │   └── types/               # TypeScript types
+    └── public/                   # Static assets
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Python 3.9+
+- Node.js 16+
+- npm or yarn
+
+### Backend Setup
+1. **Navigate to backend directory**
+   ```bash
+   cd backend
+   ```
+
+2. **Create and activate virtual environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run database migrations**
+   ```bash
+   python manage.py migrate
+   ```
+
+5. **Start the Django development server**
+   ```bash
+   python manage.py runserver
+   ```
+   Backend will be available at `http://localhost:8000`
+
+### Frontend Setup
+1. **Navigate to frontend directory**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the React development server**
+   ```bash
+   npm start
+   ```
+   Frontend will be available at `http://localhost:3000`
+
+## 🔧 Configuration
+
+### Environment Variables
+Create a `.env` file in the backend directory:
+```env
+DEBUG=True
+SECRET_KEY=your-secret-key-here
+DATABASE_URL=sqlite:///db.sqlite3
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+```
+
+## 🎯 API Endpoints
+
+### Authentication
+- `POST /api/auth/register/` - User registration
+- `POST /api/auth/login/` - User login
+- `POST /api/auth/logout/` - User logout
+- `POST /api/auth/token/refresh/` - Refresh JWT token
+- `GET /api/auth/user/` - Get current user info
+- `PUT /api/auth/user/` - Update user profile
+
+### Password Reset
+- `POST /api/auth/password/forgot/` - Request password reset
+- `POST /api/auth/password/reset/` - Reset password with token
+
+### Dashboard
+- `GET /api/auth/dashboard/` - Get dashboard data (protected)
     │   ├── components/
     │   ├── contexts/
     │   ├── pages/
