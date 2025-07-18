@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'authentication',
+    'mt5_integration',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -84,8 +86,12 @@ WSGI_APPLICATION = 'authproject.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),
     }
 }
 
@@ -170,3 +176,12 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only for development
 
 # Custom User Model
 AUTH_USER_MODEL = 'authentication.User'
+
+# Paystack Configuration
+PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY', default='')
+PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY', default='')
+PAYSTACK_WEBHOOK_SECRET = config('PAYSTACK_WEBHOOK_SECRET', default='')
+
+# Currency settings for South Africa
+DEFAULT_CURRENCY = 'ZAR'
+PAYSTACK_CURRENCY = 'ZAR'

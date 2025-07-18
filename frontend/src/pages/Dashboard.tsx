@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services';
+import MT5AccountCard from '../components/MT5AccountCard';
 import './Dashboard.css';
 
 interface DashboardData {
@@ -119,6 +120,9 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* MT5 Account Integration */}
+        <MT5AccountCard />
 
         {/* Quick Actions */}
         <div className="dashboard-card">

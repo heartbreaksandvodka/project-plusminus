@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Paystack Test - Project Plus Minus</title>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+</head>
+<body>
+    <h1>Test Payment Integration</h1>
+    
+    <div id="plans-container">
+        <h2>Subscription Plans</h2>
+        <div id="plans"></div>
+    </div>
+    
+    <div id="payment-result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        // Load subscription plans
+        async function loadPlans() {
+            try {
+                const response = await fetch(`${API_BASE}/payments/plans/`);
+                const data = await response.json();
+                
+                const plansDiv = document.getElementById('plans');
+                data.plans.forEach(plan => {
+                    const planDiv = document.createElement('div');
+                    planDiv.innerHTML = `
+                        <div style="border: 1px solid #ccc; padding: 20px; margin: 10px; border-radius: 5px;">
+                            <h3>${plan.name}</h3>
+                            <p>${plan.description}</p>
+                            <p><strong>Price: R${plan.price} ZAR</strong></p>
+                            <p>Duration: ${plan.duration_days} days</p>
+                            <p>Max Algorithms: ${plan.max_algorithms}</p>
+                            <p>Max MT5 Accounts: ${plan.max_mt5_accounts}</p>
+                            <button onclick="testPayment('${plan.id}', '${plan.name}', ${plan.price})">
+                                Subscribe for R${plan.price}
+                            </button>
+                        </div>
+                    `;
+                    plansDiv.appendChild(planDiv);
+                });
+            } catch (error) {
+                console.error('Error loading plans:', error);
+            }
+        }
+        
+        // Test payment without authentication (for testing only)
+        async function testPayment(planId, planName, amount) {
+            try {
+                // For testing, we'll use Paystack directly
+                const handler = PaystackPop.setup({
+                    key: 'pk_test_29749b6abaf348813469ac29328b1b75eb13e263',
+                    email: 'test@example.com',
+                    amount: amount * 100, // Convert to kobo
+                    currency: 'ZAR',
+                    ref: 'test_' + Math.floor((Math.random() * 1000000000) + 1),
+                    metadata: {
+                        plan_id: planId,
+                        plan_name: planName
+                    },
+                    callback: function(response) {
+                        // Payment successful
+                        document.getElementById('payment-result').innerHTML = `
+                            <div style="background: green; color: white; padding: 20px; margin: 20px; border-radius: 5px;">
+                                <h3>Payment Successful!</h3>
+                                <p>Reference: ${response.reference}</p>
+                                <p>Plan: ${planName}</p>
+                                <p>Amount: R${amount}</p>
+                                <p>Now you can verify this transaction in your Django backend!</p>
+                            </div>
+                        `;
+                        
+                        // You can now test verification
+                        console.log('Payment Reference:', response.reference);
+                    },
+                    onClose: function() {
+                        alert('Payment window closed.');
+                    }
+                });
+                handler.openIframe();
+            } catch (error) {
+                console.error('Error processing payment:', error);
+            }
+        }
+        
+        // Load plans when page loads
+        loadPlans();
+    </script>
+</body>
+</html>

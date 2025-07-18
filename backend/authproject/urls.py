@@ -6,6 +6,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('authentication.urls')),
+    path('api/mt5/', include('mt5_integration.urls')),
+    path('api/payments/', include('payments.urls')),
 ]
 
 if settings.DEBUG:

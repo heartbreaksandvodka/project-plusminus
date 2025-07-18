@@ -32,14 +32,50 @@ def register(request):
                 'refresh': str(refresh),
             }
         }, status=status.HTTP_201_CREATED)
+    
+    # Check if user already exists
+    errors = serializer.errors
+    if 'email' in errors:
+        for error in errors['email']:
+            if 'already exists' in str(error) or 'unique' in str(error).lower():
+                return Response({
+                    'error_type': 'user_exists',
+                    'message': 'An account with this email already exists. Please login instead.',
+                    'redirect_to': 'login'
+                }, status=status.HTTP_409_CONFLICT)
+    
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
-    serializer = UserLoginSerializer(data=request.data, context={'request': request})
-    if serializer.is_valid():
-        user = serializer.validated_data['user']
+    email = request.data.get('email')
+    password = request.data.get('password')
+    
+    if not email or not password:
+        return Response({
+            'error_type': 'missing_fields',
+            'message': 'Email and password are required.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if user exists
+    try:
+        user = User.objects.get(email=email)
+        # User exists, check password
+        if not user.check_password(password):
+            return Response({
+                'error_type': 'incorrect_password',
+                'message': 'Incorrect password. Please try again.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Check if user is active
+        if not user.is_active:
+            return Response({
+                'error_type': 'inactive_user',
+                'message': 'Your account has been deactivated. Please contact support.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Login successful
         refresh = RefreshToken.for_user(user)
         return Response({
             'message': 'Login successful',
@@ -49,7 +85,14 @@ def login(request):
                 'refresh': str(refresh),
             }
         }, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    except User.DoesNotExist:
+        # User doesn't exist
+        return Response({
+            'error_type': 'user_not_found',
+            'message': 'No account found with this email. Please register first.',
+            'redirect_to': 'register'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

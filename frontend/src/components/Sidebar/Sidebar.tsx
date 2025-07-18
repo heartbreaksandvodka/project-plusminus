@@ -49,6 +49,12 @@ const Sidebar: React.FC = () => {
       active: location.pathname === '/change-password'
     },
     {
+      icon: '🧮',
+      label: 'Algorithms',
+      path: '/algorithms',
+      active: location.pathname === '/algorithms'
+    },
+    {
       icon: '💳',
       label: 'Subscriptions',
       path: '/subscriptions',

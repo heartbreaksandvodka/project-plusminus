@@ -10,6 +10,7 @@ import Profile from './pages/Profile';
 import UpdateProfile from './pages/UpdateProfile';
 import ChangePassword from './pages/ChangePassword';
 import Subscriptions from './pages/Subscriptions';
+import Algorithms from './pages/Algorithms';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import './App.css';
@@ -74,6 +75,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <Subscriptions />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/algorithms"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Algorithms />
                   </Layout>
                 </ProtectedRoute>
               }

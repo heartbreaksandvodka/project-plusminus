@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { RegisterCredentials } from '../types/auth';
 
 const Register: React.FC = () => {
+  const location = useLocation();
   const [credentials, setCredentials] = useState<RegisterCredentials>({
-    email: '',
+    email: location.state?.email || '',
     username: '',
     first_name: '',
     last_name: '',
     password: '',
     password_confirm: '',
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState(location.state?.message || '');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -34,10 +37,26 @@ const Register: React.FC = () => {
       navigate('/dashboard');
     } catch (err: any) {
       const errorData = err.response?.data;
-      if (errorData) {
-        // Handle validation errors
-        const errorMessages = Object.values(errorData).flat();
-        setError(errorMessages.join(' '));
+      
+      if (errorData?.error_type === 'user_exists') {
+        // User already exists, redirect to login
+        setError(errorData.message);
+        setTimeout(() => {
+          navigate('/login', { 
+            state: { 
+              email: credentials.email,
+              message: 'An account with this email already exists. Please login instead.' 
+            }
+          });
+        }, 2000);
+      } else if (errorData) {
+        // Handle other validation errors
+        if (typeof errorData === 'object' && !errorData.message) {
+          const errorMessages = Object.values(errorData).flat();
+          setError(errorMessages.join(' '));
+        } else {
+          setError(errorData.message || 'Registration failed. Please try again.');
+        }
       } else {
         setError('Registration failed. Please try again.');
       }
@@ -53,6 +72,16 @@ const Register: React.FC = () => {
       [name]: value,
     }));
   };
+
+  // Clear the redirect message after 5 seconds
+  React.useEffect(() => {
+    if (location.state?.message) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   return (
     <div className="auth-container">
@@ -117,28 +146,48 @@ const Register: React.FC = () => {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={credentials.password}
-              onChange={handleChange}
-              required
-              placeholder="Enter your password"
-            />
+            <div className="password-input-container">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={credentials.password}
+                onChange={handleChange}
+                required
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "👁️" : "🙈"}
+              </button>
+            </div>
           </div>
 
           <div className="form-group">
             <label htmlFor="password_confirm">Confirm Password</label>
-            <input
-              type="password"
-              id="password_confirm"
-              name="password_confirm"
-              value={credentials.password_confirm}
-              onChange={handleChange}
-              required
-              placeholder="Confirm your password"
-            />
+            <div className="password-input-container">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="password_confirm"
+                name="password_confirm"
+                value={credentials.password_confirm}
+                onChange={handleChange}
+                required
+                placeholder="Confirm your password"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? "👁️" : "🙈"}
+              </button>
+            </div>
           </div>
 
           <button type="submit" disabled={loading} className="auth-button">
