@@ -255,20 +255,22 @@
 .form-group select {
   width: 100%;
   padding: 12px;
-  border: 2px solid #e1e1e1;
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #667eea, #764ba2) border-box;
   border-radius: 8px;
   font-size: 14px;
+  color: black;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.8);
   box-sizing: border-box;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #764ba2, #667eea) border-box;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  background: white;
 }
 
 .password-input-container {
@@ -279,6 +281,8 @@
 
 .password-input-container input {
   padding-right: 45px;
+  background: white;
+  color: black;
 }
 
 .password-toggle {

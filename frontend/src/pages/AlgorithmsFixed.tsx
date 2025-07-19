@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import './Algorithms.css';
-import { FloatingSupportWidget } from '../components/Support';
 
 interface RiskManagement {
   maxLossPerTrade: number; // percentage
@@ -39,6 +38,25 @@ interface TradingAlgorithm {
   riskManagement: RiskManagement;
 }
 
+interface SupportTicket {
+  id: string;
+  subject: string;
+  description: string;
+  category: 'technical' | 'trading' | 'account' | 'billing';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ChatMessage {
+  id: string;
+  message: string;
+  sender: 'user' | 'support';
+  timestamp: Date;
+  isRead: boolean;
+}
+
 const Algorithms: React.FC = () => {
   const [algorithms, setAlgorithms] = useState<TradingAlgorithm[]>([]);
   const [userSubscription, setUserSubscription] = useState<any>(null);
@@ -47,6 +65,14 @@ const Algorithms: React.FC = () => {
   
   // Risk Management States
   const [showRiskManager, setShowRiskManager] = useState<string | null>(null);
+  
+  // Customer Support States
+  const [showSupportChat, setShowSupportChat] = useState(false);
+  const [showTicketForm, setShowTicketForm] = useState(false);
+  const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
 
   useEffect(() => {
     // Load algorithms based on user subscription
@@ -357,6 +383,43 @@ const Algorithms: React.FC = () => {
     return errors;
   };
 
+  // Customer Support Functions
+  const sendMessage = (message: string) => {
+    const newMsg: ChatMessage = {
+      id: Date.now().toString(),
+      message,
+      sender: 'user',
+      timestamp: new Date(),
+      isRead: false
+    };
+    setChatMessages(prev => [...prev, newMsg]);
+    setNewMessage('');
+    
+    // Simulate support response
+    setTimeout(() => {
+      const supportMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        message: 'Thank you for your message. Our support team will assist you shortly.',
+        sender: 'support',
+        timestamp: new Date(),
+        isRead: false
+      };
+      setChatMessages(prev => [...prev, supportMsg]);
+    }, 2000);
+  };
+
+  const createSupportTicket = (ticket: Omit<SupportTicket, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
+    const newTicket: SupportTicket = {
+      ...ticket,
+      id: Date.now().toString(),
+      status: 'open',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    setSupportTickets(prev => [...prev, newTicket]);
+    setShowTicketForm(false);
+  };
+
   const handleDeploy = (algorithmId: string, symbol: string) => {
     if (!selectedAccount) {
       alert('Please select an MT5 account first');
@@ -442,6 +505,28 @@ const Algorithms: React.FC = () => {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Customer Support Panel */}
+        <div className="support-panel">
+          <button 
+            className="support-btn chat-btn"
+            onClick={() => setShowSupportChat(true)}
+          >
+            💬 Live Chat
+          </button>
+          <button 
+            className="support-btn ticket-btn"
+            onClick={() => setShowTicketForm(true)}
+          >
+            🎫 Create Ticket
+          </button>
+          <button 
+            className="support-btn kb-btn"
+            onClick={() => setShowKnowledgeBase(true)}
+          >
+            📚 Knowledge Base
+          </button>
         </div>
       </div>
 
@@ -685,8 +770,138 @@ const Algorithms: React.FC = () => {
         ))}
       </div>
 
-      {/* Floating Support Widget */}
-      <FloatingSupportWidget />
+      {/* Live Chat Modal */}
+      {showSupportChat && (
+        <div className="modal-overlay" onClick={() => setShowSupportChat(false)}>
+          <div className="chat-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="chat-header">
+              <h3>💬 Live Support Chat</h3>
+              <button onClick={() => setShowSupportChat(false)}>✕</button>
+            </div>
+            <div className="chat-messages">
+              {chatMessages.map(msg => (
+                <div key={msg.id} className={`chat-message ${msg.sender}`}>
+                  <div className="message-content">{msg.message}</div>
+                  <div className="message-time">
+                    {msg.timestamp.toLocaleTimeString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="chat-input">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type your message..."
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage(newMessage)}
+              />
+              <button onClick={() => sendMessage(newMessage)}>Send</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Support Ticket Modal */}
+      {showTicketForm && (
+        <div className="modal-overlay" onClick={() => setShowTicketForm(false)}>
+          <div className="ticket-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="ticket-header">
+              <h3>🎫 Create Support Ticket</h3>
+              <button onClick={() => setShowTicketForm(false)}>✕</button>
+            </div>
+            <form className="ticket-form" onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              createSupportTicket({
+                subject: formData.get('subject') as string,
+                description: formData.get('description') as string,
+                category: formData.get('category') as any,
+                priority: formData.get('priority') as any
+              });
+            }}>
+              <div className="form-group">
+                <label>Subject</label>
+                <input type="text" name="subject" required />
+              </div>
+              <div className="form-group">
+                <label>Category</label>
+                <select name="category" required>
+                  <option value="">Select Category</option>
+                  <option value="technical">Technical Issue</option>
+                  <option value="trading">Trading Support</option>
+                  <option value="account">Account Management</option>
+                  <option value="billing">Billing</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Priority</label>
+                <select name="priority" required>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea name="description" rows={4} required></textarea>
+              </div>
+              <button type="submit" className="submit-ticket-btn">Create Ticket</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Knowledge Base Modal */}
+      {showKnowledgeBase && (
+        <div className="modal-overlay" onClick={() => setShowKnowledgeBase(false)}>
+          <div className="kb-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="kb-header">
+              <h3>📚 Knowledge Base</h3>
+              <button onClick={() => setShowKnowledgeBase(false)}>✕</button>
+            </div>
+            <div className="kb-content">
+              <div className="kb-section">
+                <h4>🚀 Getting Started</h4>
+                <ul>
+                  <li>How to connect your MT5 account</li>
+                  <li>Understanding algorithm risk levels</li>
+                  <li>Setting up your first trading algorithm</li>
+                  <li>Account balance requirements</li>
+                </ul>
+              </div>
+              <div className="kb-section">
+                <h4>⚙️ Risk Management</h4>
+                <ul>
+                  <li>Configuring stop loss and take profit</li>
+                  <li>Position sizing strategies</li>
+                  <li>Maximum drawdown settings</li>
+                  <li>Daily loss limits</li>
+                </ul>
+              </div>
+              <div className="kb-section">
+                <h4>📊 Performance Analysis</h4>
+                <ul>
+                  <li>Reading ROI metrics</li>
+                  <li>Understanding win rates</li>
+                  <li>Profit factor calculations</li>
+                  <li>Performance optimization tips</li>
+                </ul>
+              </div>
+              <div className="kb-section">
+                <h4>🔧 Troubleshooting</h4>
+                <ul>
+                  <li>Algorithm not deploying</li>
+                  <li>MT5 connection issues</li>
+                  <li>Performance problems</li>
+                  <li>Account access issues</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

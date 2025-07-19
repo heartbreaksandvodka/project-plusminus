@@ -1,0 +1,239 @@
+/* Support Ticket Modal Styles */
+.ticket-modal {
+  background: #1e293b;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  border: 1px solid #334155;
+}
+
+.ticket-header {
+  background: linear-gradient(135deg, #334155, #475569);
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #475569;
+}
+
+.ticket-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: rgba(248, 250, 252, 0.1);
+  color: white;
+}
+
+.ticket-form {
+  padding: 1.5rem;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: calc(90vh - 120px);
+  overflow-y: auto;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group label {
+  color: #e2e8f0;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #3b82f6, #2563eb) border-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  color: black;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #2563eb, #3b82f6) border-box;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #9ca3af;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.5;
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.form-group select option {
+  background: white;
+  color: black;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid #374151;
+}
+
+.cancel-btn,
+.submit-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-size: 0.875rem;
+}
+
+.cancel-btn {
+  background: #374151;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+}
+
+.cancel-btn:hover {
+  background: #475569;
+  color: white;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Priority and Category specific styling */
+.form-group select[name="priority"] option[value="urgent"] {
+  color: #ef4444;
+}
+
+.form-group select[name="priority"] option[value="high"] {
+  color: #f59e0b;
+}
+
+.form-group select[name="priority"] option[value="medium"] {
+  color: #3b82f6;
+}
+
+.form-group select[name="priority"] option[value="low"] {
+  color: #10b981;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .ticket-modal {
+    max-width: 95vw;
+    margin: 1rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .ticket-header {
+    padding: 1rem;
+  }
+
+  .ticket-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .ticket-form {
+    padding: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancel-btn,
+  .submit-btn {
+    width: 100%;
+  }
+}
+
+/* Loading state */
+.submit-btn.loading {
+  position: relative;
+  color: transparent;
+}
+
+.submit-btn.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}

@@ -1,0 +1,239 @@
+/* Floating Support Widget Styles */
+.floating-support-widget {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.support-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px) scale(0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.support-options.expanded {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: all;
+}
+
+.support-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  min-width: 160px;
+  position: relative;
+  transform: translateX(20px);
+  animation: slideInRight 0.3s ease forwards;
+}
+
+.support-option:hover {
+  background: #2563eb;
+  border-color: #3b82f6;
+  transform: translateX(0) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+}
+
+.support-option.chat-option {
+  animation-delay: 0.1s;
+}
+
+.support-option.ticket-option {
+  animation-delay: 0.2s;
+}
+
+.support-option.knowledge-option {
+  animation-delay: 0.3s;
+}
+
+.option-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.option-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.unread-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse-notification 2s infinite;
+}
+
+.support-trigger {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.support-trigger:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.support-trigger.expanded {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  transform: rotate(180deg);
+}
+
+.support-trigger.expanded:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.trigger-icon {
+  font-size: 1.5rem;
+  transition: transform 0.3s ease;
+}
+
+.trigger-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.notification-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  border: 2px solid white;
+  border-radius: 50%;
+  animation: pulse-notification 2s infinite;
+}
+
+/* Animations */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-notification {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .floating-support-widget {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .support-trigger {
+    width: 56px;
+    height: 56px;
+  }
+
+  .trigger-icon {
+    font-size: 1.3rem;
+  }
+
+  .support-option {
+    min-width: 140px;
+    padding: 0.625rem 0.875rem;
+  }
+
+  .option-label {
+    font-size: 0.8rem;
+  }
+
+  .option-icon {
+    font-size: 1.1rem;
+  }
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .floating-support-widget {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .support-trigger {
+    border: 2px solid white;
+  }
+
+  .support-option {
+    border: 2px solid #64748b;
+  }
+
+  .support-option:hover {
+    border-color: white;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .support-options,
+  .support-option,
+  .support-trigger,
+  .trigger-icon,
+  .notification-dot,
+  .unread-indicator {
+    animation: none;
+    transition: none;
+  }
+
+  .support-trigger:hover {
+    transform: none;
+  }
+
+  .support-option:hover {
+    transform: none;
+  }
+}
