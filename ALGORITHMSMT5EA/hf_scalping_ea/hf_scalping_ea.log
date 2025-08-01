@@ -1,0 +1,38 @@
+
+2025-07-27 01:05:42,009 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:05:42,035 - INFO - Connected to MT5 - Account: 210715557, Server: Exness-MT5Trial9
+2025-07-27 01:05:42,049 - INFO - Symbol info: BTCUSD, Point: 0.01, Digits: 2
+2025-07-27 01:05:42,052 - INFO - Starting High-Frequency Scalping EA
+2025-07-27 01:06:58,218 - INFO - Received stop signal
+2025-07-27 01:06:58,218 - INFO - High-Frequency Scalping EA stopped
+2025-07-27 01:06:58,219 - INFO - Stop signal sent to EA
+2025-07-27 01:07:23,072 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:07:23,093 - INFO - Connected to MT5 - Account: 210715557, Server: Exness-MT5Trial9
+2025-07-27 01:07:23,099 - INFO - Symbol info: BTCUSD, Point: 0.01, Digits: 2
+2025-07-27 01:07:23,101 - INFO - Starting High-Frequency Scalping EA
+2025-07-27 01:08:06,745 - INFO - Received stop signal
+2025-07-27 01:08:06,745 - INFO - High-Frequency Scalping EA stopped
+2025-07-27 01:08:06,746 - INFO - Stop signal sent to EA
+2025-07-27 01:15:00,978 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:15:01,002 - INFO - Connected to MT5 - Account: 210715557, Server: Exness-MT5Trial9
+2025-07-27 01:15:01,005 - INFO - Symbol info: BTCUSD, Point: 0.01, Digits: 2
+2025-07-27 01:15:01,006 - INFO - Starting High-Frequency Scalping EA
+2025-07-27 01:16:12,735 - INFO - Received stop signal
+2025-07-27 01:16:12,736 - INFO - High-Frequency Scalping EA stopped
+2025-07-27 01:16:12,737 - INFO - Stop signal sent to EA
+2025-07-27 01:16:20,888 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:20,922 - INFO - Connected to MT5 - Account: 210715557, Server: Exness-MT5Trial9
+2025-07-27 01:16:20,934 - INFO - Symbol info: BTCUSD, Point: 0.01, Digits: 2
+2025-07-27 01:16:34,037 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,040 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,041 - INFO - Daily trade limit reached
+2025-07-27 01:16:34,047 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,049 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,067 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,070 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,085 - ERROR - Error calculating position size: 'HighFrequencyScalpingEA' object has no attribute 'stop_loss'
+2025-07-27 01:16:34,088 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,095 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,106 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,113 - INFO - High-Frequency Scalping EA initialized
+2025-07-27 01:16:34,117 - INFO - High-Frequency Scalping EA initialized
