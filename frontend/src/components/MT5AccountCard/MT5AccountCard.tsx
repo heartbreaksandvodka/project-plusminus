@@ -26,6 +26,30 @@ const MT5AccountCard: React.FC = () => {
     loadAccount();
   }, []);
 
+  // Improved live polling for account status every 10 seconds
+  useEffect(() => {
+    if (!account) return;
+    const interval = setInterval(async () => {
+      try {
+        const result = await mt5Service.refreshStatus();
+        // Ensure numeric conversion for balance, equity, margin
+        setAccount(prev => {
+          const acc = result.account;
+          return {
+            ...acc,
+            balance: acc.balance !== null && acc.balance !== undefined ? Number(acc.balance) : null,
+            equity: acc.equity !== null && acc.equity !== undefined ? Number(acc.equity) : null,
+            margin: acc.margin !== null && acc.margin !== undefined ? Number(acc.margin) : null,
+          };
+        });
+      } catch (err) {
+        // Optionally handle error
+      }
+    }, 10000); // 10 seconds
+    return () => clearInterval(interval);
+    // eslint-disable-next-line
+  }, [account?.id]);
+
   const loadAccount = async () => {
     try {
       setLoading(true);
@@ -210,22 +234,7 @@ const MT5AccountCard: React.FC = () => {
 
       {account && !showForm ? (
         <div className="account-display">
-          <div className="account-status">
-            <div className="status-indicator">
-              <span className="status-icon">{getStatusIcon(account.connection_status)}</span>
-              <span 
-                className="status-text"
-                style={{ color: getStatusColor(account.connection_status) }}
-              >
-                {account.connection_status.charAt(0).toUpperCase() + account.connection_status.slice(1)}
-              </span>
-            </div>
-            {account.last_connected && (
-              <div className="last-connected">
-                Last connected: {new Date(account.last_connected).toLocaleString()}
-              </div>
-            )}
-          </div>
+          {/* No status icon or text at the top. Status will be shown in details below. */}
 
           <div className="account-details">
             <div className="detail-row">
@@ -242,6 +251,15 @@ const MT5AccountCard: React.FC = () => {
                 {account.account_type.toUpperCase()}
               </span>
             </div>
+            <div className="detail-row">
+              <span className="label">Connection:</span>
+              <span className="value" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '1.2em', verticalAlign: 'middle' }}>{getStatusIcon(account.connection_status)}</span>
+                <span style={{ color: getStatusColor(account.connection_status), fontWeight: 600 }}>
+                  {account.connection_status.charAt(0).toUpperCase() + account.connection_status.slice(1)}
+                </span>
+              </span>
+            </div>
           </div>
 
           {account.is_connected && (
@@ -249,19 +267,25 @@ const MT5AccountCard: React.FC = () => {
               <div className="balance-item">
                 <span className="balance-label">Balance:</span>
                 <span className="balance-value">
-                  {account.balance ? `${account.balance.toFixed(2)} ${account.currency}` : 'N/A'}
+                  {typeof account.balance === 'number' && !isNaN(account.balance)
+                    ? `${account.balance.toFixed(2)} ${account.currency}`
+                    : 'N/A'}
                 </span>
               </div>
               <div className="balance-item">
                 <span className="balance-label">Equity:</span>
                 <span className="balance-value">
-                  {account.equity ? `${account.equity.toFixed(2)} ${account.currency}` : 'N/A'}
+                  {typeof account.equity === 'number' && !isNaN(account.equity)
+                    ? `${account.equity.toFixed(2)} ${account.currency}`
+                    : 'N/A'}
                 </span>
               </div>
               <div className="balance-item">
                 <span className="balance-label">Margin:</span>
                 <span className="balance-value">
-                  {account.margin ? `${account.margin.toFixed(2)} ${account.currency}` : 'N/A'}
+                  {typeof account.margin === 'number' && !isNaN(account.margin)
+                    ? `${account.margin.toFixed(2)} ${account.currency}`
+                    : 'N/A'}
                 </span>
               </div>
             </div>

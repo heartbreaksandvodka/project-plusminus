@@ -1,50 +1,51 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services';
+import { statisticsService, AccountStatistics } from '../services/api/statistics';
+import { manualStatisticsService, ManualStatistics } from '../services/api/manualStatistics';
 import MT5AccountCard from '../components/MT5AccountCard';
 import './Dashboard.css';
 
-interface DashboardData {
-  message: string;
-  user: any;
-  stats: {
-    account_age_days: number;
-    profile_completeness: number;
-    total_logins: number;
-    last_login: string | null;
-  };
-  recent_activity: Array<{
-    action: string;
-    timestamp: string;
-    description: string;
-  }>;
-  notifications: Array<{
-    type: string;
-    message: string;
-    timestamp: string;
-  }>;
-}
+// Helper to format percentages to 1 decimal and max 3 significant digits (e.g., -22.4%)
+const formatPercent = (value: number | string | undefined | null) => {
+  if (value === undefined || value === null || value === '') return '0%';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '0%';
+  // Clamp to -99.9% to 99.9% for display, show '>99.9%' or '<-99.9%' for out-of-range
+  if (num > 99.9) return '>99.9%';
+  if (num < -99.9) return '<-99.9%';
+  return `${num.toFixed(1)}%`;
+};
 
 const Dashboard: React.FC = () => {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [accountStats, setAccountStats] = useState<AccountStatistics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [manualStats, setManualStats] = useState<ManualStatistics | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchStats = async () => {
       try {
-        const data = await authService.getDashboard();
-        setDashboardData(data);
+        const stats = await statisticsService.getAccountStatistics();
+        setAccountStats(stats);
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        setAccountStats(null);
+      }
+      try {
+        const manual = await manualStatisticsService.getManualStatistics();
+        setManualStats(manual);
+      } catch (error) {
+        setManualStats(null);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchDashboardData();
+    fetchStats();
+    // Optionally, poll every 30s for live stats
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -57,15 +58,7 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'info': return 'ℹ️';
-      case 'warning': return '⚠️';
-      case 'success': return '✅';
-      case 'error': return '❌';
-      default: return 'ℹ️';
-    }
-  };
+
 
   if (loading) {
     return (
@@ -76,33 +69,100 @@ const Dashboard: React.FC = () => {
     );
   }
 
+
+
+
+  // Custom manual profitability calculation: profit/loss ratio as a percentage
+  let customManualProfitability: string = '0%';
+  let trades: any[] = [];
+  if (manualStats && Array.isArray((manualStats as any).trades)) {
+    trades = (manualStats as any).trades;
+  } else if (manualStats && Array.isArray((manualStats as any).sessions)) {
+    // Try to extract trades from sessions if present
+    trades = (manualStats as any).sessions.flatMap((s: any) => Array.isArray(s.trades) ? s.trades : []);
+  }
+  if (trades.length > 0) {
+    const profits = trades.filter((t: any) => typeof t.profit === 'number' && t.profit > 0).map((t: any) => t.profit);
+    const losses = trades.filter((t: any) => typeof t.profit === 'number' && t.profit < 0).map((t: any) => t.profit);
+    const sumProfits = profits.reduce((a: number, b: number) => a + b, 0);
+    const sumLosses = losses.reduce((a: number, b: number) => a + b, 0);
+    if (sumLosses !== 0) {
+      const ratio = (sumProfits / Math.abs(sumLosses)) * 100;
+      customManualProfitability = formatPercent(ratio);
+    } else if (sumProfits > 0) {
+      customManualProfitability = '100%';
+    } else {
+      customManualProfitability = '0%';
+    }
+  }
+
   return (
     <div className="dashboard-container">
       <main className="dashboard-content">
-        {/* User Statistics */}
+
+        {/* Account Statistics (Live) */}
         <div className="dashboard-card">
           <h2>📊 Account Statistics</h2>
           <div className="stats-grid">
             <div className="stat-item">
-              <div className="stat-value">{dashboardData?.stats.account_age_days || 0}</div>
-              <div className="stat-label">Days Active</div>
+              <div className="stat-value">{accountStats?.ea_activity.length || 0}</div>
+              <div className="stat-label">Active EAs</div>
             </div>
             <div className="stat-item">
-              <div className="stat-value">{dashboardData?.stats.profile_completeness || 0}%</div>
-              <div className="stat-label">Profile Complete</div>
+              <div className="stat-value">{accountStats?.running_eas || 0}</div>
+              <div className="stat-label">Running EAs</div>
             </div>
             <div className="stat-item">
-              <div className="stat-value">{dashboardData?.stats.total_logins || 0}</div>
-              <div className="stat-label">Total Logins</div>
+              <div className="stat-value">{formatPercent(accountStats?.profitability_percent)}</div>
+              <div className="stat-label">Profitability</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">{accountStats?.total_trades || 0}</div>
+              <div className="stat-label">Total Trades</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">{formatPercent(accountStats?.win_rate)}</div>
+              <div className="stat-label">Win Rate</div>
             </div>
           </div>
           <div style={{ marginTop: '20px' }}>
-            <p><strong>Profile Completeness:</strong></p>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: `${dashboardData?.stats.profile_completeness || 0}%` }}
-              ></div>
+            <p><strong>EA Activity:</strong></p>
+            <ul>
+              {accountStats?.ea_activity.map((ea, idx) => (
+                <li key={idx}>
+                  <strong>{ea.ea_name}</strong>: {ea.active_duration} (Started: {new Date(ea.start_time).toLocaleString()})
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Manual/Non-EA Account Statistics (Live) */}
+          <div style={{ marginTop: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+            <h3>📝 Manual/Non-EA Account Statistics (Live)</h3>
+            <div className="stats-grid">
+              <div className="stat-item">
+                <div className="stat-value">{manualStats?.total_trades || 0}</div>
+                <div className="stat-label">Manual Trades</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{customManualProfitability}</div>
+                <div className="stat-label">Manual Profitability</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{formatPercent(manualStats?.win_rate)}</div>
+                <div className="stat-label">Manual Win Rate</div>
+              </div>
+            </div>
+            <div style={{ marginTop: '20px' }}>
+              <p><strong>Manual Trading Sessions:</strong></p>
+              <ul>
+                {manualStats?.sessions.slice(0, 3).map((session, idx) => (
+                  <li key={idx}>
+                    <strong>Session:</strong> {new Date(session.session_start).toLocaleString()} - {session.session_end ? new Date(session.session_end).toLocaleString() : 'Ongoing'}<br />
+                    <strong>Trades:</strong> {session.trades_executed} | <strong>P/L:</strong> {session.profit_loss}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
@@ -115,8 +175,8 @@ const Dashboard: React.FC = () => {
             <p><strong>Email:</strong> {user?.email}</p>
             <p><strong>Username:</strong> {user?.username}</p>
             <p><strong>Member since:</strong> {new Date(user?.date_joined || '').toLocaleDateString()}</p>
-            {dashboardData?.stats.last_login && (
-              <p><strong>Last login:</strong> {formatDate(dashboardData.stats.last_login)}</p>
+            {user?.last_login && (
+              <p><strong>Last login:</strong> {formatDate(user.last_login)}</p>
             )}
           </div>
         </div>
@@ -141,48 +201,16 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="dashboard-card">
-          <h2>📈 Recent Activity</h2>
-          <div className="activity-list">
-            {dashboardData?.recent_activity.map((activity, index) => (
-              <div key={index} className="activity-item">
-                <div className="activity-info">
-                  <div className="activity-action">{activity.action}</div>
-                  <div className="activity-description">{activity.description}</div>
-                </div>
-                <div className="activity-time">
-                  {formatDate(activity.timestamp)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* No recent_activity data available, block removed or implement if data source is added */}
 
         {/* Notifications */}
-        <div className="dashboard-card">
-          <h2>🔔 Notifications</h2>
-          <div className="notifications-list">
-            {dashboardData?.notifications.map((notification, index) => (
-              <div key={index} className={`notification-item ${notification.type}`}>
-                <div className="notification-icon">
-                  {getNotificationIcon(notification.type)}
-                </div>
-                <div className="notification-content">
-                  <div className="notification-message">{notification.message}</div>
-                  <div className="notification-time">
-                    {formatDate(notification.timestamp)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* No notifications data available, block removed or implement if data source is added */}
 
         {/* Welcome Message */}
         <div className="dashboard-card">
           <h2>💬 Welcome Message</h2>
           <p style={{ fontSize: '1.1rem', color: '#555', lineHeight: '1.6' }}>
-            {dashboardData?.message || 'Welcome to your dashboard!'}
+            {'Welcome to your dashboard!'}
           </p>
         </div>
       </main>

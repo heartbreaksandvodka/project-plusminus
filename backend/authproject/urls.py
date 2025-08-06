@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/', include('authentication.urls')),
     path('api/mt5/', include('mt5_integration.urls')),
     path('api/payments/', include('payments.urls')),
+    path('api/projectplus/', include('projectplusdatabase.urls')),
 ]
 
 if settings.DEBUG:

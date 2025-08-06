@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'authentication',
     'mt5_integration',
     'payments',
+    'projectplusdatabase',
 ]
 
 MIDDLEWARE = [
