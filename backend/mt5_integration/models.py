@@ -120,6 +120,8 @@ class AlgorithmExecution(models.Model):
     stopped_at = models.DateTimeField(null=True, blank=True)
     profit_loss = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     trades_count = models.IntegerField(default=0)
+    # Process ID for real process management
+    pid = models.IntegerField(null=True, blank=True)
     
     # Error tracking
     error_message = models.TextField(null=True, blank=True)

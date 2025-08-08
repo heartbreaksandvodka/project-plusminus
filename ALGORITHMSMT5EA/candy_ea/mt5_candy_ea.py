@@ -16,9 +16,17 @@ import numpy as np
 import time
 import sys
 import os
+import logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from global_config import get_account_credentials, get_risk_settings
 from risk_manager import RiskManager
+
+# Setup logging
+logging.basicConfig(
+    filename='candy_ea_debug.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 class CandyEA:
     def __init__(self, symbol="EURUSD", base_lot=0.1, magic_number=20250731):
@@ -38,15 +46,18 @@ class CandyEA:
 
     def initialize_mt5(self):
         if not mt5.initialize():
+            logging.error("MetaTrader 5 initialization failed")
             print("MetaTrader 5 initialization failed")
             print("Error code:", mt5.last_error())
             return False
         if self.login and self.password and self.server:
             authorized = mt5.login(self.login, password=self.password, server=self.server)
             if not authorized:
+                logging.error("Login failed")
                 print("Login failed")
                 print("Error code:", mt5.last_error())
                 return False
+        logging.info("MetaTrader 5 initialized and logged in.")
         print("MetaTrader 5 initialized and logged in.")
         return True
 
@@ -219,8 +230,10 @@ class CandyEA:
 
     def run(self):
         if not self.initialize_mt5():
+            logging.error("Failed to initialize MT5. Exiting.")
             return
         self.is_running = True
+        logging.info("Candy EA started...")
         print("Candy EA started...")
         try:
             while self.is_running:
@@ -230,6 +243,7 @@ class CandyEA:
                     self.open_position(signal)
                 time.sleep(60)
         except KeyboardInterrupt:
+            logging.info("EA stopped by user")
             print("EA stopped by user")
         finally:
             self.stop()

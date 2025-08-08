@@ -350,3 +350,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ## License
 
 This project is open source and available under the MIT License.
+
+## 📘 Additional Documentation
+
+- [MT5 Backend Integration](MT5_BACKEND_README.md): Detailed overview of the MT5 integration backend, including server-side logic and database structure.

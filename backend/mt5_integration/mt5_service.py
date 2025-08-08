@@ -3,6 +3,9 @@ import logging
 from datetime import datetime
 from typing import Dict, Optional, Tuple
 from .models import MT5Account
+import subprocess
+import signal
+import os
 
 
 logger = logging.getLogger(__name__)
@@ -165,26 +168,23 @@ class MT5ConnectionManager:
 
 class MT5AlgorithmManager:
     """Manages algorithm execution on MT5 accounts"""
-    
     @staticmethod
-    def start_algorithm(mt5_account: MT5Account, algorithm_name: str) -> Dict:
+    def start_algorithm(mt5_account: MT5Account, algorithm_name: str, symbol: str) -> Dict:
         """
-        Start an algorithm on the MT5 account
+        Actually launch the EA script as a subprocess and store its PID.
         """
         try:
-            # This would typically involve:
-            # 1. Connecting to MT5
-            # 2. Loading the EA/algorithm
-            # 3. Starting execution
-            # 4. Monitoring the process
-            
-            # For now, we'll simulate the process
+            ea_script_path = f"c:/Users/johan/project-plusminus/ALGORITHMSMT5EA/{algorithm_name}/{algorithm_name}.py"
+            process = subprocess.Popen([
+                'python', ea_script_path, symbol
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            pid = process.pid
             return {
                 'status': 'success',
                 'message': f'Algorithm {algorithm_name} started successfully',
-                'algorithm_id': f"{algorithm_name}_{mt5_account.id}_{datetime.now().timestamp()}"
+                'pid': pid,
+                'algorithm_id': f"{algorithm_name}_{symbol}_{mt5_account.id}_{datetime.now().timestamp()}"
             }
-            
         except Exception as e:
             logger.error(f"Failed to start algorithm: {str(e)}")
             return {
@@ -192,23 +192,22 @@ class MT5AlgorithmManager:
                 'message': 'Failed to start algorithm',
                 'details': str(e)
             }
-    
+
     @staticmethod
-    def stop_algorithm(algorithm_execution_id: str) -> Dict:
+    def resume_algorithm(pid: int) -> Dict:
         """
-        Stop a running algorithm
+        Resume a paused EA subprocess using SIGCONT.
         """
         try:
-            # Implementation for stopping algorithm
+            os.kill(pid, signal.SIGCONT)
             return {
                 'status': 'success',
-                'message': 'Algorithm stopped successfully'
+                'message': 'Algorithm resumed successfully'
             }
-            
         except Exception as e:
-            logger.error(f"Failed to stop algorithm: {str(e)}")
+            logger.error(f"Failed to resume algorithm: {str(e)}")
             return {
                 'status': 'error',
-                'message': 'Failed to stop algorithm',
+                'message': 'Failed to resume algorithm',
                 'details': str(e)
             }

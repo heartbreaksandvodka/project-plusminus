@@ -17,6 +17,7 @@ class RiskManager:
         self.ea_name = ea_name
         self.daily_trades_count = 0
         self.daily_pnl_percent = 0.0
+        self.max_risk_percent = 2.0  # Default maximum risk percentage
         
     def get_account_balance(self):
         """Get current account balance"""
@@ -220,6 +221,35 @@ class RiskManager:
             'profit_target_percent': DAILY_PROFIT_TARGET_PERCENT,
             'risk_amount_per_trade': self.calculate_amount_from_percent(ACCOUNT_RISK_PERCENT)
         }
+    
+    def calculate_current_risk(self, account):
+        """Calculate the current risk dynamically based on the MT5 account setup."""
+        try:
+            # Fetch account balance
+            balance = self.get_account_balance()
+
+            # Fetch open positions for the account
+            positions = mt5.positions_get()
+            if positions is None:
+                return 0.0  # No open positions, no risk
+
+            # Calculate total risk from open positions
+            total_risk = 0.0
+            for position in positions:
+                if position.symbol in account.allowed_symbols:
+                    # Risk is calculated as volume * price * tick value
+                    symbol_info = mt5.symbol_info(position.symbol)
+                    if symbol_info:
+                        tick_value = symbol_info.trade_tick_value
+                        total_risk += position.volume * position.price * tick_value
+
+            # Convert total risk to percentage of account balance
+            current_risk_percent = (total_risk / balance) * 100
+            return current_risk_percent
+
+        except Exception as e:
+            print(f"Error calculating current risk: {e}")
+            return 0.0
 
 # Global risk manager instance
 risk_manager = RiskManager("Global")
