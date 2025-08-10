@@ -1,19 +1,20 @@
+
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 from .models import EATemplate, UserEAInstance, EAPerformance
 from .serializers import EATemplateSerializer, UserEAInstanceSerializer, EAPerformanceSerializer
-from rest_framework.permissions import IsAuthenticated
 
-class EATemplateViewSet(viewsets.ModelViewSet):
+class BaseAuthenticatedModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+class EATemplateViewSet(BaseAuthenticatedModelViewSet):
     queryset = EATemplate.objects.all()
     serializer_class = EATemplateSerializer
-    permission_classes = [IsAuthenticated]
 
-class UserEAInstanceViewSet(viewsets.ModelViewSet):
+class UserEAInstanceViewSet(BaseAuthenticatedModelViewSet):
     queryset = UserEAInstance.objects.all()
     serializer_class = UserEAInstanceSerializer
-    permission_classes = [IsAuthenticated]
 
-class EAPerformanceViewSet(viewsets.ModelViewSet):
+class EAPerformanceViewSet(BaseAuthenticatedModelViewSet):
     queryset = EAPerformance.objects.all()
     serializer_class = EAPerformanceSerializer
-    permission_classes = [IsAuthenticated]

@@ -13,6 +13,7 @@ import Subscriptions from './pages/Subscriptions';
 import Algorithms from './pages/Algorithms';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import SettingsPage from './pages/SettingsPage';
 import './App.css';
 
 function App() {
@@ -94,10 +95,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <div style={{ padding: '20px' }}>
-                      <h1>Settings</h1>
-                      <p>Settings page coming soon...</p>
-                    </div>
+                    <SettingsPage />
                   </Layout>
                 </ProtectedRoute>
               }

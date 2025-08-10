@@ -14,4 +14,5 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('subscriptions/', views.subscriptions, name='subscriptions'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('settings/', views.user_settings, name='user_settings'),
 ]

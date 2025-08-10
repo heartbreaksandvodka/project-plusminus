@@ -18,36 +18,6 @@ import hmac
 logger = logging.getLogger(__name__)
 
 
-@api_view(['GET'])
-@permission_classes([])  # No authentication required
-def subscription_plans_view(request):
-    """Get all available subscription plans"""
-    try:
-        plans = SubscriptionPlan.objects.filter(is_active=True)
-        plans_data = []
-        
-        for plan in plans:
-            plans_data.append({
-                'id': str(plan.id),
-                'name': plan.name,
-                'plan_type': plan.plan_type,
-                'description': plan.description,
-                'price': str(plan.price),
-                'currency': plan.currency,
-                'duration_days': plan.duration_days,
-                'max_algorithms': plan.max_algorithms,
-                'max_mt5_accounts': plan.max_mt5_accounts,
-                'features': plan.features
-            })
-        
-        return Response({'plans': plans_data}, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        logger.error(f"Error fetching subscription plans: {e}")
-        return Response(
-            {'error': 'Failed to fetch subscription plans'}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
 
 
 class SubscriptionPlansView(APIView):

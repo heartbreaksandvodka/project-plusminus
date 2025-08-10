@@ -5,7 +5,7 @@ app_name = 'payments'
 
 urlpatterns = [
     # Subscription plans
-    path('plans/', views.subscription_plans_view, name='subscription_plans'),
+    path('plans/', views.SubscriptionPlansView.as_view(), name='subscription_plans'),
     
     # Payment flows (public verification for redirects)
     path('verify/', views.verify_payment_view, name='verify_payment_public'),

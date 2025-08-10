@@ -1,4 +1,11 @@
+
 from rest_framework import serializers
+from .models import User
+
+class UserSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('notifications', 'theme', 'privacy')
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from .models import User, PasswordResetToken

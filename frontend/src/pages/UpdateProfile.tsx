@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './UpdateProfile.css';
@@ -16,7 +16,7 @@ interface UserProfile {
 }
 
 const UpdateProfile: React.FC = () => {
-  const { user, token } = useAuth();
+  const { token } = useAuth(); // Removed 'user' as it is unused
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,11 +25,7 @@ const UpdateProfile: React.FC = () => {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await fetch('http://localhost:8000/api/profile/', {
         headers: {
@@ -47,7 +43,11 @@ const UpdateProfile: React.FC = () => {
     } catch (err) {
       setError('Failed to fetch profile');
     }
-  };
+  }, [token]); // Memoized fetchProfile with useCallback
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]); // Updated dependency array
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -251,4 +251,4 @@ const UpdateProfile: React.FC = () => {
   );
 };
 
-export default UpdateProfile;
+export default UpdateProfile; // Ensure proper export statement

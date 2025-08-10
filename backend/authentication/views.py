@@ -1,4 +1,20 @@
-from rest_framework import status
+from .serializers import UserSettingsSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def user_settings(request):
+    user = request.user
+    if request.method == 'GET':
+        serializer = UserSettingsSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == 'PUT':
+        serializer = UserSettingsSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -16,6 +32,11 @@ from .serializers import (
     ResetPasswordSerializer
 )
 from .models import User, PasswordResetToken
+from .utils import api_success, api_error, log_error
+
+# Generic base viewset for DRY permissions
+class BaseAuthenticatedModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
