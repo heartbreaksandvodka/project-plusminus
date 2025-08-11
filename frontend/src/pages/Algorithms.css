@@ -13,12 +13,7 @@ html, body {
 
 .algorithms-header {
   text-align: center;
-  margin-bottom: 3rem;
-}
-
-.algorithms-header h1 {
-  font-size: 3rem;
-  font-weight: 700;
+  @import '../styles/global.css';
   background: linear-gradient(135deg, #3b82f6, #10b981, #8b5cf6);
   background-clip: text;
   -webkit-background-clip: text;
