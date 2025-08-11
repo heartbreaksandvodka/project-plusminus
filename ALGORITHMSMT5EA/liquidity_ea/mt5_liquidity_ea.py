@@ -17,6 +17,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from global_config import get_account_credentials, get_risk_settings
 from risk_manager import RiskManager
 from liquidity_ea.utils import detect_fvg, detect_liquidity_pools, get_session
+# Import common EA utilities
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
 
 class LiquidityEA:
     def __init__(self, symbol="EURUSD", base_lot=0.1, magic_number=88888):
@@ -35,33 +37,16 @@ class LiquidityEA:
         self.log_file = "liquidity_ea.log"
 
     def initialize_mt5(self):
-        if not mt5.initialize():
-            print("MetaTrader 5 initialization failed")
-            print("Error code:", mt5.last_error())
-            return False
-        if self.login and self.password and self.server:
-            authorized = mt5.login(self.login, password=self.password, server=self.server)
-            if not authorized:
-                print("Login failed")
-                print("Error code:", mt5.last_error())
-                return False
-        print("MetaTrader 5 initialized and logged in.")
-        return True
+        # Use shared utility
+        return initialize_mt5(self.login, self.password, self.server)
 
     def get_symbol_info(self):
-        symbol_info = mt5.symbol_info(self.symbol)
-        if symbol_info is None:
-            print(f"Symbol {self.symbol} not found")
-            return None
-        if not symbol_info.visible:
-            mt5.symbol_select(self.symbol, True)
-        return symbol_info
+        # Use shared utility
+        return get_symbol_info(self.symbol)
 
     def get_current_price(self):
-        tick = mt5.symbol_info_tick(self.symbol)
-        if tick is None:
-            return None, None
-        return tick.bid, tick.ask
+        # Use shared utility
+        return get_current_price(self.symbol)
 
     def get_market_data(self, timeframe, num_bars=200):
         rates = mt5.copy_rates_from_pos(self.symbol, timeframe, 0, num_bars)
@@ -226,6 +211,8 @@ class LiquidityEA:
         print("Liquidity EA started...")
         try:
             while self.is_running:
+                # Pause logic: check for pause.flag in working directory
+                check_pause_flag(os.path.dirname(os.path.abspath(__file__)))
                 self.manage_positions()
                 signal = self.get_signal()
                 if signal:

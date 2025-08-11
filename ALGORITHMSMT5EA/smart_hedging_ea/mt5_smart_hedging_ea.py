@@ -17,6 +17,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from global_config import get_account_credentials, get_risk_settings
 from risk_manager import RiskManager
+# Import common EA utilities
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
 
 class SmartHedgingEA:
     def __init__(self, symbol="US500", base_lot=0.1, hedge_ratio=0.5, magic_number=54321):
@@ -36,18 +38,8 @@ class SmartHedgingEA:
         self.log_file = "hedging_ea.log"
 
     def initialize_mt5(self):
-        if not mt5.initialize():
-            print("MetaTrader 5 initialization failed")
-            print("Error code:", mt5.last_error())
-            return False
-        if self.login and self.password and self.server:
-            authorized = mt5.login(self.login, password=self.password, server=self.server)
-            if not authorized:
-                print("Login failed")
-                print("Error code:", mt5.last_error())
-                return False
-        print("MetaTrader 5 initialized and logged in.")
-        return True
+        # Use shared utility
+        return initialize_mt5(self.login, self.password, self.server)
 
     def manage_positions(self):
         # Trailing stop, partial close, global stop loss, drawdown check
@@ -112,6 +104,8 @@ class SmartHedgingEA:
         print("Smart Hedging EA started...")
         try:
             while self.is_running:
+                # Pause logic: check for pause.flag in working directory
+                check_pause_flag(os.path.dirname(os.path.abspath(__file__)))
                 self.manage_positions()
                 signal = self.get_signal()
                 if signal == "HEDGE":

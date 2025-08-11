@@ -13,13 +13,13 @@ from datetime import datetime
 import time
 import sys
 import os
-
 # Add root directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 # Import global configuration and risk management
 from global_config import *
 from risk_manager import RiskManager
+# Import common EA utilities
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
 
 class TrailingStopManager:
     def __init__(self, symbol="EURUSD", risk_percentage=None, 
@@ -47,51 +47,16 @@ class TrailingStopManager:
         self.risk_manager = RiskManager(f"TrailingStop_{symbol}")
         
     def initialize_mt5(self):
-        """Initialize connection to MetaTrader 5"""
-        if not mt5.initialize():
-            print("MetaTrader 5 initialization failed")
-            print("Error code:", mt5.last_error())
-            return False
-        
-        print("MetaTrader 5 initialized successfully")
-        
-        # Login using global credentials
-        if self.login and self.password and self.server:
-            print(f"Attempting to login to account {self.login} on server {self.server}...")
-            authorized = mt5.login(self.login, password=self.password, server=self.server)
-            if not authorized:
-                print("Login failed")
-                print("Error code:", mt5.last_error())
-                return False
-            print("Login successful!")
-        
-        print("Terminal info:", mt5.terminal_info())
-        print("Account info:", mt5.account_info())
-        return True
+        # Use shared utility
+        return initialize_mt5(self.login, self.password, self.server)
     
     def get_symbol_info(self):
-        """Get symbol information and verify it's available"""
-        symbol_info = mt5.symbol_info(self.symbol)
-        if symbol_info is None:
-            print(f"Symbol {self.symbol} not found")
-            return None
-        
-        # Enable symbol in Market Watch if not visible
-        if not symbol_info.visible:
-            print(f"Symbol {self.symbol} is not visible, trying to switch on")
-            if not mt5.symbol_select(self.symbol, True):
-                print(f"symbol_select({self.symbol}) failed, exit")
-                return None
-        
-        return symbol_info
+        # Use shared utility
+        return get_symbol_info(self.symbol)
     
     def get_current_price(self):
-        """Get current bid and ask prices"""
-        tick = mt5.symbol_info_tick(self.symbol)
-        if tick is None:
-            print(f"Failed to get tick for {self.symbol}")
-            return None, None
-        return tick.bid, tick.ask
+        # Use shared utility
+        return get_current_price(self.symbol)
     
     def calculate_risk_based_sl(self, position):
         """Calculate stop loss based on percentage of account balance"""
@@ -202,28 +167,25 @@ class TrailingStopManager:
         """Main trailing stop manager loop"""
         if not self.initialize_mt5():
             return
-        
         self.is_running = True
         print("Risk-Based Trailing Stop Manager started...")
         print(f"Managing positions for symbol: {self.symbol}")
         print(f"Risk per trade: {self.risk_percentage}% of account balance")
         print(f"Magic number filter: {'All trades' if self.magic_number == 0 else self.magic_number}")
         print("Will calculate stop loss based on risking 10% of balance!")
-        
         try:
             while self.is_running:
+                # Pause logic: check for pause.flag in working directory
+                check_pause_flag(os.path.dirname(os.path.abspath(__file__)))
                 # Update trailing stops for existing positions
                 positions = self.get_open_positions()
-                
                 if len(positions) > 0:
                     print(f"\nManaging {len(positions)} open position(s)...")
                     self.update_trailing_stops()
                 else:
                     print("No open positions to manage.")
-                
                 # Wait before next iteration
                 time.sleep(3)  # Check every 3 seconds for more responsive trailing
-                
         except KeyboardInterrupt:
             print("Trailing Stop Manager stopped by user")
         finally:

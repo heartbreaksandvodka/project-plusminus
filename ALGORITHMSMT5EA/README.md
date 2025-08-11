@@ -25,6 +25,21 @@ Each Expert Advisor (EA) has its own dedicated folder containing:
 - Detailed documentation and usage guides
 - Windows batch files for quick startup
 
+### Code Reuse & Shared Utilities
+
+All EA scripts now use shared utility functions from `common_ea.py` for:
+- MetaTrader 5 initialization and login
+- Symbol information and price retrieval
+- Pause/resume logic via file-based flags (Windows compatible)
+
+This ensures consistent, maintainable, and robust code across all EAs. To use these utilities, simply import from:
+
+```python
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
+```
+
+Refer to `common_ea.py` for details and usage examples.
+
 ## Current Expert Advisors
 
 ### 1. `trailing_stop_ea/` - Risk-Based Trailing Stop Manager

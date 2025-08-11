@@ -17,6 +17,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from global_config import get_account_credentials, get_risk_settings
 from risk_manager import RiskManager
 from news_api import get_upcoming_events, filter_critical_events
+# Import common EA utilities
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
 
 class NewsEA:
     def __init__(self, symbol="EURUSD", base_lot=0.1, magic_number=67890):
@@ -34,24 +36,12 @@ class NewsEA:
         self.log_file = "news_ea.log"
 
     def initialize_mt5(self):
-        if not mt5.initialize():
-            print("MetaTrader 5 initialization failed")
-            print("Error code:", mt5.last_error())
-            return False
-        if self.login and self.password and self.server:
-            authorized = mt5.login(self.login, password=self.password, server=self.server)
-            if not authorized:
-                print("Login failed")
-                print("Error code:", mt5.last_error())
-                return False
-        print("MetaTrader 5 initialized and logged in.")
-        return True
+        # Use shared utility
+        return initialize_mt5(self.login, self.password, self.server)
 
     def get_current_price(self):
-        tick = mt5.symbol_info_tick(self.symbol)
-        if tick is None:
-            return None, None
-        return tick.bid, tick.ask
+        # Use shared utility
+        return get_current_price(self.symbol)
 
     def place_news_orders(self, event):
         bid, ask = self.get_current_price()
@@ -103,6 +93,8 @@ class NewsEA:
         try:
             self.send_daily_news_events()  # Log daily news events on start
             while self.is_running:
+                # Pause logic: check for pause.flag in working directory
+                check_pause_flag(os.path.dirname(os.path.abspath(__file__)))
                 # Get upcoming news events
                 events = get_upcoming_events(self.country, self.days_ahead)
                 critical_events = filter_critical_events(events)

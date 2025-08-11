@@ -27,19 +27,18 @@ import threading
 from collections import deque
 import sys
 import os
-
 # Add root directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 # Import global configuration and risk management
 from global_config import *
 from risk_manager import RiskManager
-
 # Import local config for EA-specific settings (optional overrides)
 try:
     from config import *
 except ImportError:
     print("Local config not found, using global config only")
+# Import common EA utilities
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
 
 # Setup logging
 logging.basicConfig(
@@ -107,61 +106,34 @@ class HighFrequencyScalpingEA:
         logging.info("High-Frequency Scalping EA initialized with global config")
         
     def initialize_mt5(self) -> bool:
-        """Initialize MetaTrader 5 connection"""
-        try:
-            if not mt5.initialize():
-                logging.error(f"MT5 initialization failed: {mt5.last_error()}")
-                return False
-                
-            # Login using global credentials
-            if not mt5.login(self.login, self.password, self.server):
-                logging.error(f"Login failed: {mt5.last_error()}")
-                return False
-                
-            logging.info(f"Connected to MT5 - Account: {self.login}, Server: {self.server}")
-            
-            # Get symbol info
-            symbol_info = mt5.symbol_info(self.symbol)
+        # Use shared utility
+        result = initialize_mt5(self.login, self.password, self.server)
+        if result:
+            symbol_info = get_symbol_info(self.symbol)
             if symbol_info is None:
                 logging.error(f"Symbol {self.symbol} not found")
                 return False
-                
-            if not symbol_info.visible:
-                if not mt5.symbol_select(self.symbol, True):
-                    logging.error(f"Failed to select symbol {self.symbol}")
-                    return False
-                    
             self.symbol_info = symbol_info
             self.point = symbol_info.point
             self.digits = symbol_info.digits
-            
             logging.info(f"Symbol info: {self.symbol}, Point: {self.point}, Digits: {self.digits}")
             return True
+        return False
             
-        except Exception as e:
-            logging.error(f"Error initializing MT5: {e}")
-            return False
-            
-    def get_current_prices(self) -> Optional[Dict]:
-        """Get current bid/ask prices and spread"""
-        try:
-            tick = mt5.symbol_info_tick(self.symbol)
-            if tick is None:
-                return None
-                
-            spread = (tick.ask - tick.bid) / self.point
-            
-            return {
-                'time': tick.time,
-                'bid': tick.bid,
-                'ask': tick.ask,
-                'spread': spread,
-                'volume': tick.volume if hasattr(tick, 'volume') else 0
-            }
-            
-        except Exception as e:
-            logging.error(f"Error getting current prices: {e}")
+    def get_current_prices(self) -> Optional[dict]:
+        # Use shared utility
+        bid, ask = get_current_price(self.symbol)
+        if bid is None or ask is None:
             return None
+        spread = (ask - bid) / self.point
+        tick = mt5.symbol_info_tick(self.symbol)
+        return {
+            'time': tick.time if tick else None,
+            'bid': bid,
+            'ask': ask,
+            'spread': spread,
+            'volume': tick.volume if tick and hasattr(tick, 'volume') else 0
+        }
     
     def get_account_balance(self) -> float:
         """Get current account balance"""
@@ -607,52 +579,43 @@ class HighFrequencyScalpingEA:
             if not self.initialize_mt5():
                 logging.error("Failed to initialize MT5")
                 return
-                
             logging.info("Starting High-Frequency Scalping EA")
             self.is_running = True
-            
             while self.is_running:
+                # Pause logic: check for pause.flag in working directory
+                check_pause_flag(os.path.dirname(os.path.abspath(__file__)))
                 try:
                     # Check if it's trading time
                     if not self.is_trading_time():
                         time.sleep(60)  # Check every minute during off hours
                         continue
-                        
                     # Update daily statistics
                     self.update_daily_stats()
-                    
                     # Check daily limits
                     if self.daily_trades >= MAX_DAILY_TRADES:
                         logging.info("Daily trade limit reached, waiting...")
                         time.sleep(300)  # Wait 5 minutes
                         continue
-                        
                     # Check daily limits using global risk manager  
                     if not self.risk_manager.check_daily_limits():
                         logging.info("Daily loss limit reached, stopping trading")
                         break
-                        
                     # Manage existing positions
                     self.manage_positions()
-                    
                     # Analyze market for new opportunities
                     signal_data = self.analyze_order_flow()
-                    
                     if signal_data['signal'] in ['BUY', 'SELL'] and signal_data['strength'] >= 0.6:
                         current_prices = self.get_current_prices()
                         if current_prices:
                             success = self.place_scalping_order(signal_data['signal'], current_prices)
                             if success:
                                 logging.info(f"Signal executed: {signal_data['signal']} (Strength: {signal_data['strength']:.2f})")
-                    
                     # Log performance every 100 trades
                     if self.total_trades > 0 and self.total_trades % 100 == 0:
                         stats = self.get_performance_stats()
                         logging.info(f"Performance Update: {stats}")
-                        
                     # Short sleep for high-frequency operation
                     time.sleep(UPDATE_INTERVAL)
-                    
                 except KeyboardInterrupt:
                     logging.info("Received stop signal")
                     break
@@ -663,7 +626,6 @@ class HighFrequencyScalpingEA:
                         continue
                     else:
                         break
-                        
         except Exception as e:
             logging.error(f"Fatal error in EA: {e}")
         finally:

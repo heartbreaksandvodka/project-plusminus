@@ -87,7 +87,8 @@ def pause_algorithm(request, execution_id):
             return Response({'error': 'Algorithm is not running and cannot be paused.'}, status=400)
         if execution.pid is None:
             return Response({'error': 'No PID found for this execution.'}, status=400)
-        result = MT5AlgorithmManager.pause_algorithm(execution.pid)
+        algorithm_name = request.data.get('algorithm_name', execution.algorithm_name)
+        result = MT5AlgorithmManager.pause_algorithm(execution.pid, algorithm_name=algorithm_name)
         if result['status'] == 'success':
             execution.execution_status = 'paused'
             execution.save()
@@ -111,7 +112,8 @@ def resume_algorithm(request, execution_id):
             return Response({'error': 'Algorithm is not paused and cannot be resumed.'}, status=400)
         if execution.pid is None:
             return Response({'error': 'No PID found for this execution.'}, status=400)
-        result = MT5AlgorithmManager.resume_algorithm(execution.pid)
+        algorithm_name = request.data.get('algorithm_name', execution.algorithm_name)
+        result = MT5AlgorithmManager.resume_algorithm(execution.pid, algorithm_name=algorithm_name)
         if result['status'] == 'success':
             execution.execution_status = 'running'
             execution.save()

@@ -1,4 +1,5 @@
 import MetaTrader5 as mt5
+from django.conf import settings
 import logging
 from datetime import datetime
 from typing import Dict, Optional, Tuple
@@ -6,6 +7,7 @@ from .models import MT5Account
 import subprocess
 import signal
 import os
+import sys
 
 
 logger = logging.getLogger(__name__)
@@ -169,15 +171,62 @@ class MT5ConnectionManager:
 class MT5AlgorithmManager:
     """Manages algorithm execution on MT5 accounts"""
     @staticmethod
+    def _get_project_root() -> str:
+        # backend/mt5_integration/ -> backend -> project root
+        return os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+
+    @staticmethod
+    def _get_algorithms_dir() -> str:
+        # Prefer settings.ALGORITHMS_DIR; fallback to <project_root>/ALGORITHMSMT5EA
+        try:
+            base = getattr(settings, 'ALGORITHMS_DIR', None)
+        except Exception:
+            base = None
+        if not base:
+            base = os.path.join(MT5AlgorithmManager._get_project_root(), 'ALGORITHMSMT5EA')
+        return base
+
+    @staticmethod
+    def _get_ea_script_path(algorithm_name: str) -> str:
+        # EAs follow convention: <algoname>/mt5_<algoname>.py
+        ea_dir = os.path.join(MT5AlgorithmManager._get_algorithms_dir(), algorithm_name)
+        script = f"mt5_{algorithm_name}.py"
+        return os.path.join(ea_dir, script)
+    @staticmethod
     def start_algorithm(mt5_account: MT5Account, algorithm_name: str, symbol: str) -> Dict:
         """
         Actually launch the EA script as a subprocess and store its PID.
         """
         try:
-            ea_script_path = f"c:/Users/johan/project-plusminus/ALGORITHMSMT5EA/{algorithm_name}/{algorithm_name}.py"
-            process = subprocess.Popen([
-                'python', ea_script_path, symbol
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            ea_script_path = MT5AlgorithmManager._get_ea_script_path(algorithm_name)
+            if not os.path.isfile(ea_script_path):
+                return {
+                    'status': 'error',
+                    'message': f'EA script not found for {algorithm_name}',
+                    'details': ea_script_path
+                }
+
+            # Ensure Python can import the ALGORITHMSMT5EA package
+            project_root = MT5AlgorithmManager._get_project_root()
+            env = os.environ.copy()
+            existing_pp = env.get('PYTHONPATH', '')
+            env['PYTHONPATH'] = (project_root + (os.pathsep + existing_pp if existing_pp else ''))
+
+            # Prefer current interpreter
+            python_exec = sys.executable or 'python'
+
+            # Start the EA
+            cmd = [python_exec, ea_script_path]
+            if symbol:
+                cmd.append(symbol)
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=project_root,
+                env=env,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if hasattr(subprocess, 'CREATE_NEW_PROCESS_GROUP') else 0
+            )
             pid = process.pid
             return {
                 'status': 'success',
@@ -193,21 +242,93 @@ class MT5AlgorithmManager:
                 'details': str(e)
             }
 
+    
+
     @staticmethod
-    def resume_algorithm(pid: int) -> Dict:
+    def pause_algorithm(pid: int, algorithm_name: str = None) -> dict:
         """
-        Resume a paused EA subprocess using SIGCONT.
+        Pause a running EA subprocess by creating a pause.flag file in the EA directory.
         """
         try:
-            os.kill(pid, signal.SIGCONT)
+            if algorithm_name:
+                # Use the EA folder name (e.g., candy_ea, grid_trading_ea)
+                ea_dir = os.path.join(MT5AlgorithmManager._get_algorithms_dir(), algorithm_name)
+                pause_flag_path = os.path.join(ea_dir, "pause.flag")
+                with open(pause_flag_path, 'w') as f:
+                    f.write('paused')
+                return {
+                    'status': 'success',
+                    'message': 'Algorithm paused successfully (pause.flag created)'
+                }
+            else:
+                return {
+                    'status': 'error',
+                    'message': 'Algorithm name required for pause on Windows.'
+                }
+        except Exception as e:
+            logger.error(f"Failed to pause algorithm: {str(e)}")
             return {
-                'status': 'success',
-                'message': 'Algorithm resumed successfully'
+                'status': 'error',
+                'message': 'Failed to pause algorithm',
+                'details': str(e)
             }
+
+    @staticmethod
+    def resume_algorithm(pid: int, algorithm_name: str = None) -> Dict:
+        """
+        Resume a paused EA subprocess by deleting the pause.flag file in the EA directory.
+        """
+        try:
+            if algorithm_name:
+                ea_dir = os.path.join(MT5AlgorithmManager._get_algorithms_dir(), algorithm_name)
+                pause_flag_path = os.path.join(ea_dir, "pause.flag")
+                if os.path.exists(pause_flag_path):
+                    os.remove(pause_flag_path)
+                return {
+                    'status': 'success',
+                    'message': 'Algorithm resumed successfully (pause.flag removed)'
+                }
+            else:
+                return {
+                    'status': 'error',
+                    'message': 'Algorithm name required for resume on Windows.'
+                }
         except Exception as e:
             logger.error(f"Failed to resume algorithm: {str(e)}")
             return {
                 'status': 'error',
                 'message': 'Failed to resume algorithm',
+                'details': str(e)
+            }
+
+    @staticmethod
+    def stop_algorithm(pid: int) -> Dict:
+        """
+        Stop a running EA subprocess by terminating the process. Windows-friendly.
+        """
+        try:
+            if os.name == 'nt':
+                try:
+                    # Attempt graceful termination
+                    os.kill(pid, signal.SIGTERM)
+                except Exception:
+                    # Fallback to taskkill if needed
+                    subprocess.run(['taskkill', '/PID', str(pid), '/F', '/T'], check=False,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            else:
+                # POSIX: try SIGTERM, then SIGKILL
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except Exception:
+                    os.kill(pid, signal.SIGKILL)
+            return {
+                'status': 'success',
+                'message': 'Algorithm stopped successfully'
+            }
+        except Exception as e:
+            logger.error(f"Failed to stop algorithm PID {pid}: {str(e)}")
+            return {
+                'status': 'error',
+                'message': 'Failed to stop algorithm',
                 'details': str(e)
             }

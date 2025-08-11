@@ -15,12 +15,12 @@ from datetime import datetime, timedelta
 import time
 import sys
 import os
-
 # Add root directory to path for global imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from global_config import get_account_credentials, get_risk_settings
 from risk_manager import RiskManager
+# Import common EA utilities
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
 
 class TrendFollowingEA:
     def __init__(self, symbol="EURUSD", lot_size=0.1, magic_number=98765,
@@ -43,104 +43,7 @@ class TrendFollowingEA:
         self.magic_number = magic_number
         self.primary_timeframe = primary_timeframe
         self.secondary_timeframe = secondary_timeframe
-        self.is_running = False
-        
-        # Account credentials
-        # Get global configuration
-        credentials = get_account_credentials()
-        self.login = credentials['login']
-        self.password = credentials['password']
-        self.server = credentials['server']
-
-        # Initialize global risk manager
-        self.risk_manager = RiskManager()
-        
-        # Trend following parameters
-        self.ema_fast = 21       # Fast EMA period
-        self.ema_slow = 50       # Slow EMA period
-        self.ema_filter = 200    # Long-term trend filter
-        self.atr_period = 14     # ATR period for stop loss
-        self.atr_multiplier = 2.5 # ATR multiplier for stop loss
-        self.adx_period = 14     # ADX period for trend strength
-        self.adx_threshold = 25  # Minimum ADX for trend confirmation
-        
-        # Position management
-        self.max_positions = 1   # Maximum positions per direction
-        self.trailing_enabled = True
-        self.trailing_distance = 100  # Trailing stop distance in points
-        
-    def initialize_mt5(self):
-        """Initialize connection to MetaTrader 5"""
-        if not mt5.initialize():
-            print("MetaTrader 5 initialization failed")
-            print("Error code:", mt5.last_error())
-            return False
-        
-        print("MetaTrader 5 initialized successfully")
-        
-        # Login to account if credentials provided
-        if self.login and self.password and self.server:
-            print(f"Attempting to login to account {self.login} on server {self.server}...")
-            authorized = mt5.login(self.login, password=self.password, server=self.server)
-            if not authorized:
-                print("Login failed")
-                print("Error code:", mt5.last_error())
-                return False
-            print("Login successful!")
-        
-        print("Terminal info:", mt5.terminal_info())
-        print("Account info:", mt5.account_info())
-        return True
-    
-    def get_symbol_info(self):
-        """Get symbol information and verify it's available"""
-        symbol_info = mt5.symbol_info(self.symbol)
-        if symbol_info is None:
-            print(f"Symbol {self.symbol} not found")
-            return None
-        
-        # Enable symbol in Market Watch if not visible
-        if not symbol_info.visible:
-            print(f"Symbol {self.symbol} is not visible, trying to switch on")
-            if not mt5.symbol_select(self.symbol, True):
-                print(f"symbol_select({self.symbol}) failed, exit")
-                return None
-        
-        return symbol_info
-    
-    def get_current_price(self):
-        """Get current bid and ask prices"""
-        tick = mt5.symbol_info_tick(self.symbol)
-        if tick is None:
-            print(f"Failed to get tick for {self.symbol}")
-            return None, None
-        return tick.bid, tick.ask
-    
-    def get_market_data(self, timeframe, num_bars=500):
-        """Get historical market data for analysis"""
-        rates = mt5.copy_rates_from_pos(self.symbol, timeframe, 0, num_bars)
-        if rates is None:
-            print(f"Failed to get market data for {self.symbol}")
-            return None
-        
-        df = pd.DataFrame(rates)
-        df['time'] = pd.to_datetime(df['time'], unit='s')
-        return df
-    
-    def calculate_ema(self, data, period):
-        """Calculate Exponential Moving Average"""
-        return data['close'].ewm(span=period, adjust=False).mean()
-    
-    def calculate_atr(self, data, period=14):
-        """Calculate Average True Range"""
-        high_low = data['high'] - data['low']
-        high_close = np.abs(data['high'] - data['close'].shift())
-        low_close = np.abs(data['low'] - data['close'].shift())
-        
-        ranges = pd.concat([high_low, high_close, low_close], axis=1)
-        true_range = ranges.max(axis=1)
-        atr = true_range.rolling(window=period).mean()
-        return atr
+    # ...existing attribute initializations...
     
     def calculate_adx(self, data, period=14):
         """Calculate Average Directional Index (ADX)"""
@@ -182,11 +85,13 @@ class TrendFollowingEA:
         return rsi
     
     def analyze_trend(self, timeframe):
-        """Comprehensive trend analysis"""
+        """Comprehensive trend analysis.
+        Returns a dict with key metrics used by signal generation and risk.
+        """
         data = self.get_market_data(timeframe, 500)
         if data is None or len(data) < 250:
             return None
-        
+
         # Calculate indicators
         ema_fast = self.calculate_ema(data, self.ema_fast)
         ema_slow = self.calculate_ema(data, self.ema_slow)
@@ -194,7 +99,7 @@ class TrendFollowingEA:
         atr = self.calculate_atr(data, self.atr_period)
         adx, plus_di, minus_di = self.calculate_adx(data, self.adx_period)
         rsi = self.calculate_rsi(data)
-        
+
         # Current values
         current_price = data['close'].iloc[-1]
         current_ema_fast = ema_fast.iloc[-1]
@@ -205,11 +110,15 @@ class TrendFollowingEA:
         current_plus_di = plus_di.iloc[-1]
         current_minus_di = minus_di.iloc[-1]
         current_rsi = rsi.iloc[-1]
-        
+
         # Previous values for crossover detection
         prev_ema_fast = ema_fast.iloc[-2]
         prev_ema_slow = ema_slow.iloc[-2]
-        
+
+        # Derived booleans for convenience
+        above_filter = current_price > current_ema_filter
+        strong_trend = bool(current_adx > 20)
+
         analysis = {
             'price': current_price,
             'ema_fast': current_ema_fast,
@@ -220,75 +129,12 @@ class TrendFollowingEA:
             'plus_di': current_plus_di,
             'minus_di': current_minus_di,
             'rsi': current_rsi,
-            'ema_cross_up': current_ema_fast > current_ema_slow and prev_ema_fast <= prev_ema_slow,
-            'ema_cross_down': current_ema_fast < current_ema_slow and prev_ema_fast >= prev_ema_slow,
-            'above_filter': current_price > current_ema_filter,
-            'below_filter': current_price < current_ema_filter,
-            'strong_trend': current_adx > self.adx_threshold,
-            'uptrend_strength': current_plus_di > current_minus_di,
-            'downtrend_strength': current_minus_di > current_plus_di
+            'prev_ema_fast': prev_ema_fast,
+            'prev_ema_slow': prev_ema_slow,
+            'above_filter': above_filter,
+            'strong_trend': strong_trend,
         }
-        
         return analysis
-    
-    def generate_signal(self):
-        """Generate trading signals based on multi-timeframe analysis"""
-        # Primary timeframe analysis
-        primary_analysis = self.analyze_trend(self.primary_timeframe)
-        if primary_analysis is None:
-            return None
-        
-        # Secondary timeframe analysis (for trend confirmation)
-        secondary_analysis = self.analyze_trend(self.secondary_timeframe)
-        if secondary_analysis is None:
-            return None
-        
-        # Signal conditions
-        signal = None
-        
-        # Long signal conditions
-        if (primary_analysis['ema_cross_up'] and
-            primary_analysis['above_filter'] and
-            secondary_analysis['above_filter'] and
-            primary_analysis['strong_trend'] and
-            primary_analysis['uptrend_strength'] and
-            secondary_analysis['uptrend_strength'] and
-            primary_analysis['rsi'] > 50):
-            signal = "BUY"
-        
-        # Short signal conditions
-        elif (primary_analysis['ema_cross_down'] and
-              primary_analysis['below_filter'] and
-              secondary_analysis['below_filter'] and
-              primary_analysis['strong_trend'] and
-              primary_analysis['downtrend_strength'] and
-              secondary_analysis['downtrend_strength'] and
-              primary_analysis['rsi'] < 50):
-            signal = "SELL"
-        
-        return {
-            'signal': signal,
-            'primary_analysis': primary_analysis,
-            'secondary_analysis': secondary_analysis
-        }
-    
-    def calculate_position_size(self, atr_value, account_balance, risk_percent=2.0):
-        """Calculate position size using global risk manager"""
-        symbol_info = self.get_symbol_info()
-        if symbol_info is None:
-            return 0.01  # fallback minimum lot size
-        # Use ATR-based stop loss for risk manager
-        bid, ask = self.get_current_price()
-        entry_price = ask if bid is None else bid
-        stop_loss_price = entry_price - (atr_value * self.atr_multiplier) if entry_price else None
-        if stop_loss_price is None:
-            return 0.01
-        return self.risk_manager.calculate_position_size(
-            account_balance=account_balance,
-            entry_price=entry_price,
-            stop_loss_price=stop_loss_price,
-            symbol=self.symbol
-        )
     
     def open_position(self, direction, analysis):
         """Open a new position"""
