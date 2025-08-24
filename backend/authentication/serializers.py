@@ -9,6 +9,7 @@ class UserSettingsSerializer(serializers.ModelSerializer):
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from .models import User, PasswordResetToken
+from .ea_models import EAAuthToken, EAConnectionLog
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -120,3 +121,28 @@ class ResetPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError({"new_password": str(e)})
         
         return attrs
+
+class EAAuthTokenSerializer(serializers.ModelSerializer):
+    """
+    Serializer for EA Authentication Tokens
+    Excludes the actual token value for security (except on creation)
+    """
+    is_valid = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = EAAuthToken
+        fields = ('id', 'algorithm_id', 'name', 'created_at', 'last_used', 
+                 'expires_at', 'is_active', 'permissions', 'connection_count', 
+                 'is_valid')
+        read_only_fields = ('id', 'created_at', 'last_used', 'connection_count')
+
+class EAConnectionLogSerializer(serializers.ModelSerializer):
+    """
+    Serializer for EA Connection Logs
+    """
+    class Meta:
+        model = EAConnectionLog
+        fields = ('connected_at', 'disconnected_at', 'ip_address', 
+                 'connection_duration', 'disconnect_reason', 'messages_sent',
+                 'messages_received', 'trades_reported', 'errors_encountered')
+        read_only_fields = '__all__'

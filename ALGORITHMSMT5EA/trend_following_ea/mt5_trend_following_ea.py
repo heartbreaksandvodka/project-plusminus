@@ -43,7 +43,138 @@ class TrendFollowingEA:
         self.magic_number = magic_number
         self.primary_timeframe = primary_timeframe
         self.secondary_timeframe = secondary_timeframe
-    # ...existing attribute initializations...
+        
+        # Initialize EA parameters
+        self.lot_size = lot_size
+        self.is_running = False
+        
+        # Trading parameters
+        self.ema_fast = 12
+        self.ema_slow = 26
+        self.ema_filter = 200
+        self.atr_period = 14
+        self.adx_period = 14
+        self.atr_multiplier = 2.0
+        self.max_positions = 1
+        self.trailing_enabled = True
+        
+        # Use global credentials if not provided
+        from global_config import get_account_credentials
+        credentials = get_account_credentials()
+        self.login = login or credentials['login']
+        self.password = password or credentials['password']
+        self.server = server or credentials['server']
+        
+        # Initialize risk manager
+        self.risk_manager = RiskManager(f"TrendFollowing_{symbol}")
+    
+    def initialize_mt5(self):
+        """Initialize MT5 connection using common utility"""
+        return initialize_mt5(self.login, self.password, self.server)
+    
+    def get_symbol_info(self):
+        """Get symbol info using common utility"""
+        return get_symbol_info(self.symbol)
+    
+    def get_current_price(self):
+        """Get current price using common utility"""
+        return get_current_price(self.symbol)
+    
+    def get_market_data(self, timeframe, count):
+        """Get market data for analysis"""
+        try:
+            rates = mt5.copy_rates_from_pos(self.symbol, timeframe, 0, count)
+            if rates is None:
+                return None
+            
+            import pandas as pd
+            df = pd.DataFrame(rates)
+            df['time'] = pd.to_datetime(df['time'], unit='s')
+            return df
+        except Exception as e:
+            print(f"Error getting market data: {e}")
+            return None
+    
+    def calculate_ema(self, data, period):
+        """Calculate Exponential Moving Average"""
+        return data['close'].ewm(span=period).mean()
+    
+    def calculate_atr(self, data, period):
+        """Calculate Average True Range"""
+        high = data['high']
+        low = data['low']
+        close = data['close']
+        
+        tr1 = high - low
+        tr2 = abs(high - close.shift())
+        tr3 = abs(low - close.shift())
+        
+        import pandas as pd
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        return tr.rolling(window=period).mean()
+    
+    def generate_signal(self):
+        """Generate trading signals based on trend analysis"""
+        try:
+            # Analyze primary timeframe
+            primary_analysis = self.analyze_trend(self.primary_timeframe)
+            if primary_analysis is None:
+                return None
+            
+            # Analyze secondary timeframe for confirmation
+            secondary_analysis = self.analyze_trend(self.secondary_timeframe)
+            if secondary_analysis is None:
+                return None
+            
+            signal = None
+            
+            # Check for bullish signal
+            if (primary_analysis['ema_fast'] > primary_analysis['ema_slow'] and
+                primary_analysis['prev_ema_fast'] <= primary_analysis['prev_ema_slow'] and
+                primary_analysis['above_filter'] and
+                primary_analysis['strong_trend'] and
+                secondary_analysis['above_filter'] and
+                primary_analysis['rsi'] < 70):
+                signal = "BUY"
+            
+            # Check for bearish signal
+            elif (primary_analysis['ema_fast'] < primary_analysis['ema_slow'] and
+                  primary_analysis['prev_ema_fast'] >= primary_analysis['prev_ema_slow'] and
+                  not primary_analysis['above_filter'] and
+                  primary_analysis['strong_trend'] and
+                  not secondary_analysis['above_filter'] and
+                  primary_analysis['rsi'] > 30):
+                signal = "SELL"
+            
+            return {
+                'signal': signal,
+                'primary_analysis': primary_analysis,
+                'secondary_analysis': secondary_analysis
+            }
+        except Exception as e:
+            print(f"Error generating signal: {e}")
+            return None
+    
+    def calculate_position_size(self, atr_value, account_balance, risk_percent=2.0):
+        """Calculate position size using global risk manager"""
+        symbol_info = self.get_symbol_info()
+        if symbol_info is None:
+            return 0.01  # fallback minimum lot size
+        
+        # Use ATR-based stop loss for risk manager
+        bid, ask = self.get_current_price()
+        entry_price = ask if bid is None else bid
+        stop_loss_price = entry_price - (atr_value * self.atr_multiplier) if entry_price else None
+        
+        if stop_loss_price is None:
+            return 0.01
+        
+        return self.risk_manager.calculate_position_size(
+            account_balance=account_balance,
+            entry_price=entry_price,
+            stop_loss_price=stop_loss_price,
+            symbol=self.symbol
+        )
     
     def calculate_adx(self, data, period=14):
         """Calculate Average Directional Index (ADX)"""
@@ -373,6 +504,9 @@ class TrendFollowingEA:
         try:
             iteration_count = 0
             while self.is_running:
+                # Pause logic: check for pause.flag in working directory
+                check_pause_flag(os.path.dirname(os.path.abspath(__file__)))
+                
                 # Manage existing positions
                 self.manage_positions()
                 

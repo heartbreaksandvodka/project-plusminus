@@ -1,6 +1,8 @@
 asgiref==3.9.0
 awscli==1.41.4
 botocore==1.39.4
+channels==4.0.0
+channels-redis==4.2.0
 colorama==0.4.6
 Django==5.2.4
 django-cors-headers==4.7.0
@@ -17,6 +19,7 @@ PyJWT==2.9.0
 python-dateutil==2.9.0.post0
 python-decouple==3.8
 PyYAML==6.0.2
+redis==5.0.0
 rsa==4.7.2
 s3transfer==0.13.0
 six==1.17.0
@@ -27,3 +30,4 @@ fastapi==0.104.1
 uvicorn==0.24.0
 cryptography==45.0.5
 pypaystack2
+websockets==12.0

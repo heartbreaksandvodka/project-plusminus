@@ -7,6 +7,10 @@ from .api_views.ea_trading_views import algorithm_executions
 from .api_views.trade_execution_views import start_algorithm, stop_algorithm, pause_algorithm, resume_algorithm
 from .api_views.account_status_views import account_statistics
 from .api_views.manual_trading_views import manual_statistics
+from .api_views.algorithm_analytics_views import (
+    get_algorithm_status, get_algorithm_analytics, 
+    get_trade_history, update_algorithm_config
+)
 
 urlpatterns = [
     path('account/', mt5_account, name='mt5_account'),
@@ -20,4 +24,10 @@ urlpatterns = [
     path('resume-algorithm/<int:execution_id>/', resume_algorithm, name='resume_algorithm'),
     path('account-statistics/', account_statistics, name='account_statistics'),
     path('manual-statistics/', manual_statistics, name='manual_statistics'),
+    
+    # Enhanced Analytics Endpoints
+    path('algorithm/<int:execution_id>/status/', get_algorithm_status, name='algorithm_status'),
+    path('algorithm/<int:execution_id>/analytics/', get_algorithm_analytics, name='algorithm_analytics'),
+    path('algorithm/<int:execution_id>/trades/', get_trade_history, name='trade_history'),
+    path('algorithm/<int:execution_id>/config/', update_algorithm_config, name='update_algorithm_config'),
 ]

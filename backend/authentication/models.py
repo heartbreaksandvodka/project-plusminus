@@ -46,3 +46,6 @@ class PasswordResetToken(models.Model):
     
     def __str__(self):
         return f"Password reset token for {self.user.email}"
+
+# Import EA models
+from .ea_models import EAAuthToken, EAConnectionLog

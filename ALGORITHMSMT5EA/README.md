@@ -1,18 +1,32 @@
 # ALGORITHMS
 
-Professional MetaTrader 5 Expert Advisors Collection
+Professional MetaTrader 5 Expert Advisors Collection with WebSocket Integration
 Author: Johannes N. Nkosi
-Date: July 25, 2025
+Date: August 24, 2025
 
-This is the main algorithms development workspace with a centralized Python environment for developing and running sophisticated trading strategies.
+This is the main algorithms development workspace with a centralized Python environment for developing and running sophisticated trading strategies with real-time WebSocket connectivity to the backend infrastructure.
+
+## Recent Updates ✅
+
+### EA Authentication System - PRODUCTION READY
+- **Two-Tier Authentication**: User JWT tokens + EA-specific tokens
+- **WebSocket Integration**: Real-time communication with backend
+- **Connection Monitoring**: Full logging and usage tracking
+- **Secure Token Management**: SHA256 hashing, 30-day expiration
+- **Production Testing**: Complete authentication flow validated
+
+📖 **[Complete Implementation Guide](../EA_AUTHENTICATION_IMPLEMENTATION_COMPLETE.md)**
 
 ## Python Environment
 
 - **Python Version**: 3.13.3
+- **WebSocket Support**: Django Channels with ASGI server
+- **Authentication**: EA token-based authentication system
 - **Installed Packages**:
   - MetaTrader5 (5.0.5120)
   - pandas (2.3.1)
   - numpy (2.3.2)
+  - websockets (for real-time connectivity)
   - All other required dependencies
 
 ## Expert Advisors Collection
@@ -20,6 +34,7 @@ This is the main algorithms development workspace with a centralized Python envi
 Each Expert Advisor (EA) has its own dedicated folder containing:
 - Main EA script with complete strategy implementation
 - Configuration files for easy customization
+- WebSocket connectivity for real-time communication
 - Comprehensive test scripts for validation
 - Interactive launcher scripts for user-friendly operation
 - Detailed documentation and usage guides
@@ -31,14 +46,54 @@ All EA scripts now use shared utility functions from `common_ea.py` for:
 - MetaTrader 5 initialization and login
 - Symbol information and price retrieval
 - Pause/resume logic via file-based flags (Windows compatible)
+- WebSocket client for backend communication (`websocket_client.py`)
 
 This ensures consistent, maintainable, and robust code across all EAs. To use these utilities, simply import from:
 
 ```python
 from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
+from ALGORITHMSMT5EA.websocket_client import WebSocketClient
 ```
 
-Refer to `common_ea.py` for details and usage examples.
+Refer to `common_ea.py` and `websocket_client.py` for details and usage examples.
+
+## WebSocket Integration
+
+### EA Authentication
+Each EA can authenticate with the backend using EA-specific tokens:
+
+```python
+from websocket_client import WebSocketClient
+
+# Connect with EA token
+client = WebSocketClient(
+    algorithm_id="my_ea_v1",
+    ea_token="your_ea_token_here"
+)
+
+await client.connect()
+await client.send_status("running")
+await client.send_trade_report({
+    "action": "open",
+    "symbol": "EURUSD",
+    "volume": 0.1,
+    "price": 1.0850
+})
+```
+
+### Message Types
+- **ea_status**: Algorithm status updates
+- **trade_opened**: New trade notifications  
+- **trade_closed**: Trade closure notifications
+- **ea_signal**: Trading signals and alerts
+- **ea_error**: Error notifications and logging
+
+### Testing
+Use `test_ea_token_auth.py` to validate your EA's WebSocket authentication:
+
+```bash
+C:/Users/johan/project-plusminus/.venv/Scripts/python.exe test_ea_token_auth.py
+```
 
 ## Current Expert Advisors
 

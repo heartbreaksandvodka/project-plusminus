@@ -1,330 +1,183 @@
 import React, { useState, useEffect } from 'react';
 import './Algorithms.css';
 import { FloatingSupportWidget } from '../components/Support';
-
-interface RiskManagement {
-  maxLossPerTrade: number; // percentage
-  maxDailyLoss: number; // percentage
-  maxDrawdown: number; // percentage
-  positionSize: number; // percentage of account
-  stopLoss: number; // percentage
-  takeProfit: number; // percentage
-  maxConsecutiveLosses: number;
-  isEnabled: boolean;
-}
-
-interface TradingAlgorithm {
-  id: string;
-  name: string;
-  description: string;
-  category: 'forex' | 'stocks' | 'crypto' | 'indices';
-  riskLevel: 'Low' | 'Medium' | 'High';
-  minBalance: number;
-  isActive: boolean;
-  isDeployed: boolean;
-  isPaused: boolean;
-  roi: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-    total: number;
-  };
-  performance: {
-    totalTrades: number;
-    winRate: number;
-    profitFactor: number;
-  };
-  selectedSymbol: string;
-  availableSymbols: string[];
-  riskManagement: RiskManagement;
-}
+import algorithmsService, { Algorithm, AlgorithmExecution } from '../services/api/algorithms';
+import { getUserSubscription } from '../services/api/subscriptions';
+import { getMT5Accounts } from '../services/api/mt5';
 
 const Algorithms: React.FC = () => {
-  const [algorithms, setAlgorithms] = useState<TradingAlgorithm[]>([]);
+  const [algorithms, setAlgorithms] = useState<Algorithm[]>([]);
+  const [executions, setExecutions] = useState<AlgorithmExecution[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [userSubscription, setUserSubscription] = useState<any>(null);
   const [mt5Accounts, setMT5Accounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   
   // Risk Management States
   const [showRiskManager, setShowRiskManager] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
 
+  // Load initial data
   useEffect(() => {
-    // Load algorithms based on user subscription
-    loadUserSubscription();
-    loadMT5Accounts();
-    
-    // Mock trading algorithms data
-    const mockAlgorithms: TradingAlgorithm[] = [
-      {
-        id: '1',
-        name: 'Candy EA',
-        description: 'M1 execution with higher timeframe trend and RSI cross.',
-        category: 'forex',
-        riskLevel: 'Medium',
-        minBalance: 1000,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 0.8, weekly: 4.2, monthly: 18.5, total: 156.7 },
-        performance: { totalTrades: 1247, winRate: 68.5, profitFactor: 1.85 },
-        selectedSymbol: '',
-        availableSymbols: ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'],
-        riskManagement: {
-          maxLossPerTrade: 2.0,
-          maxDailyLoss: 5.0,
-          maxDrawdown: 15.0,
-          positionSize: 1.0,
-          stopLoss: 1.5,
-          takeProfit: 3.0,
-          maxConsecutiveLosses: 3,
-          isEnabled: true
-        }
-      },
-      {
-        id: '2',
-        name: 'Grid Trading EA',
-        description: 'Systematic grid trading for volatility, buy/sell at intervals.',
-        category: 'forex',
-        riskLevel: 'Medium',
-        minBalance: 1500,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 0.5, weekly: 3.2, monthly: 14.7, total: 132.5 },
-        performance: { totalTrades: 2341, winRate: 72.3, profitFactor: 1.67 },
-        selectedSymbol: '',
-        availableSymbols: ['EURUSD', 'GBPUSD', 'USDJPY', 'ETHUSD'],
-        riskManagement: {
-          maxLossPerTrade: 2.0,
-          maxDailyLoss: 4.0,
-          maxDrawdown: 12.0,
-          positionSize: 1.2,
-          stopLoss: 1.8,
-          takeProfit: 3.5,
-          maxConsecutiveLosses: 3,
-          isEnabled: true
-        }
-      },
-      {
-        id: '3',
-        name: 'High-Frequency Scalping EA',
-        description: 'Tick-based scalping, order flow analysis, 50-100 trades/day.',
-        category: 'forex',
-        riskLevel: 'High',
-        minBalance: 1000,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 1.2, weekly: 7.8, monthly: 32.1, total: 298.4 },
-        performance: { totalTrades: 1563, winRate: 65.4, profitFactor: 1.92 },
-        selectedSymbol: '',
-        availableSymbols: ['EURUSD', 'GBPUSD', 'USDJPY'],
-        riskManagement: {
-          maxLossPerTrade: 4.0,
-          maxDailyLoss: 10.0,
-          maxDrawdown: 25.0,
-          positionSize: 1.5,
-          stopLoss: 3.0,
-          takeProfit: 6.0,
-          maxConsecutiveLosses: 5,
-          isEnabled: true
-        }
-      },
-      {
-        id: '4',
-        name: 'Indices Hedging EA',
-        description: 'Dynamic partial hedging for indices, volatility-based.',
-        category: 'indices',
-        riskLevel: 'Medium',
-        minBalance: 2500,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 0.4, weekly: 2.8, monthly: 12.6, total: 98.7 },
-        performance: { totalTrades: 287, winRate: 76.8, profitFactor: 2.67 },
-        selectedSymbol: '',
-        availableSymbols: ['US500', 'DE30'],
-        riskManagement: {
-          maxLossPerTrade: 2.5,
-          maxDailyLoss: 5.0,
-          maxDrawdown: 12.0,
-          positionSize: 2.0,
-          stopLoss: 2.0,
-          takeProfit: 4.5,
-          maxConsecutiveLosses: 3,
-          isEnabled: true
-        }
-      },
-      {
-        id: '5',
-        name: 'Indices Martingale EA',
-        description: 'Adaptive grid martingale for indices, dynamic lot sizing.',
-        category: 'indices',
-        riskLevel: 'High',
-        minBalance: 3000,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 2.1, weekly: 12.3, monthly: 45.6, total: 423.8 },
-        performance: { totalTrades: 892, winRate: 62.1, profitFactor: 2.12 },
-        selectedSymbol: '',
-        availableSymbols: ['US500', 'DE30'],
-        riskManagement: {
-          maxLossPerTrade: 4.0,
-          maxDailyLoss: 10.0,
-          maxDrawdown: 25.0,
-          positionSize: 1.5,
-          stopLoss: 3.0,
-          takeProfit: 6.0,
-          maxConsecutiveLosses: 5,
-          isEnabled: true
-        }
-      },
-      {
-        id: '6',
-        name: 'Liquidity Detector EA',
-        description: 'Detects liquidity pools and FVG, institutional entries.',
-        category: 'forex',
-        riskLevel: 'Medium',
-        minBalance: 1500,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 0.5, weekly: 3.2, monthly: 14.7, total: 132.5 },
-        performance: { totalTrades: 2341, winRate: 72.3, profitFactor: 1.67 },
-        selectedSymbol: '',
-        availableSymbols: ['EURUSD', 'GBPUSD', 'USDJPY'],
-        riskManagement: {
-          maxLossPerTrade: 2.0,
-          maxDailyLoss: 4.0,
-          maxDrawdown: 12.0,
-          positionSize: 1.2,
-          stopLoss: 1.8,
-          takeProfit: 3.5,
-          maxConsecutiveLosses: 3,
-          isEnabled: true
-        }
-      },
-      {
-        id: '7',
-        name: 'News EA',
-        description: 'Trades news events with dynamic risk management.',
-        category: 'forex',
-        riskLevel: 'High',
-        minBalance: 4000,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 1.8, weekly: 9.4, monthly: 38.2, total: 287.6 },
-        performance: { totalTrades: 456, winRate: 65.4, profitFactor: 2.45 },
-        selectedSymbol: '',
-        availableSymbols: ['EURUSD', 'GBPUSD', 'USDJPY', 'GOLD'],
-        riskManagement: {
-          maxLossPerTrade: 3.5,
-          maxDailyLoss: 8.0,
-          maxDrawdown: 18.0,
-          positionSize: 1.8,
-          stopLoss: 2.8,
-          takeProfit: 5.5,
-          maxConsecutiveLosses: 4,
-          isEnabled: true
-        }
-      },
-      {
-        id: '8',
-        name: 'Smart Hedging EA',
-        description: 'Dynamic hedging for any market, volatility-based.',
-        category: 'forex',
-        riskLevel: 'Medium',
-        minBalance: 2000,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 0.7, weekly: 4.8, monthly: 21.3, total: 178.9 },
-        performance: { totalTrades: 1124, winRate: 71.2, profitFactor: 1.98 },
-        selectedSymbol: '',
-        availableSymbols: ['EURUSD', 'GBPUSD', 'US500', 'DE30'],
-        riskManagement: {
-          maxLossPerTrade: 2.5,
-          maxDailyLoss: 6.0,
-          maxDrawdown: 15.0,
-          positionSize: 1.8,
-          stopLoss: 2.0,
-          takeProfit: 4.0,
-          maxConsecutiveLosses: 3,
-          isEnabled: true
-        }
-      },
-      {
-        id: '9',
-        name: 'Trailing Stop EA',
-        description: 'Manages trailing stops for open positions.',
-        category: 'forex',
-        riskLevel: 'Low',
-        minBalance: 1000,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 0.3, weekly: 2.1, monthly: 9.2, total: 67.4 },
-        performance: { totalTrades: 156, winRate: 84.6, profitFactor: 2.89 },
-        selectedSymbol: '',
-        availableSymbols: ['EURUSD', 'GBPUSD'],
-        riskManagement: {
-          maxLossPerTrade: 1.5,
-          maxDailyLoss: 3.0,
-          maxDrawdown: 8.0,
-          positionSize: 2.5,
-          stopLoss: 1.5,
-          takeProfit: 3.0,
-          maxConsecutiveLosses: 2,
-          isEnabled: true
-        }
-      },
-      {
-        id: '10',
-        name: 'Trend Following EA',
-        description: 'Long-term trend following with multi-timeframe analysis.',
-        category: 'forex',
-        riskLevel: 'Low',
-        minBalance: 2000,
-        isActive: true,
-        isDeployed: false,
-        isPaused: false,
-        roi: { daily: 0.3, weekly: 2.1, monthly: 9.8, total: 87.3 },
-        performance: { totalTrades: 342, winRate: 78.2, profitFactor: 2.34 },
-        selectedSymbol: '',
-        availableSymbols: ['EURUSD', 'GBPUSD', 'US500', 'DE30'],
-        riskManagement: {
-          maxLossPerTrade: 1.5,
-          maxDailyLoss: 3.0,
-          maxDrawdown: 10.0,
-          positionSize: 2.0,
-          stopLoss: 2.0,
-          takeProfit: 4.0,
-          maxConsecutiveLosses: 2,
-          isEnabled: true
-        }
-      }
-    ];
-
-    setAlgorithms(mockAlgorithms);
+    loadData();
+    // Set up polling for real-time updates
+    const interval = setInterval(loadExecutions, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval);
   }, []);
 
-  const loadUserSubscription = async () => {
-    // TODO: Fetch from API
-    setUserSubscription({
-      plan_type: 'pro',
-      max_algorithms: 10,
-      max_mt5_accounts: 2
-    });
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all([
+        loadAlgorithms(),
+        loadExecutions(),
+        loadSubscription(),
+        loadMT5Accounts()
+      ]);
+    } catch (err) {
+      setError('Failed to load data');
+      console.error('Error loading data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAlgorithms = async () => {
+    try {
+      const availableAlgorithms = await algorithmsService.getAvailableAlgorithms();
+      setAlgorithms(availableAlgorithms);
+    } catch (err) {
+      console.error('Failed to load algorithms:', err);
+    }
+  };
+
+  const loadExecutions = async () => {
+    try {
+      const executionData = await algorithmsService.getExecutions();
+      setExecutions(executionData);
+      
+      // Merge execution data with algorithms
+      const mergedAlgorithms = algorithmsService.mergeAlgorithmsWithExecutions(algorithms, executionData);
+      if (algorithms.length > 0) {
+        setAlgorithms(mergedAlgorithms);
+      }
+    } catch (err) {
+      console.error('Failed to load executions:', err);
+    }
+  };
+
+  const loadSubscription = async () => {
+    try {
+      const subscription = await getUserSubscription();
+      setUserSubscription(subscription);
+    } catch (err) {
+      console.error('Failed to load subscription:', err);
+      // Fallback to mock data for demo purposes
+      setUserSubscription({
+        id: 1,
+        plan_type: 'pro',
+        max_algorithms: 10,
+        max_mt5_accounts: 2,
+        status: 'active',
+        start_date: '2025-01-01',
+        auto_renew: true,
+        features: ['All algorithms', 'Risk management', 'Multiple accounts']
+      });
+    }
   };
 
   const loadMT5Accounts = async () => {
-    // TODO: Fetch from MT5 API
-    setMT5Accounts([
-      { id: '1', account_number: '12345678', broker: 'Exness', status: 'connected' },
-      { id: '2', account_number: '87654321', broker: 'IC Markets', status: 'connected' }
-    ]);
+    try {
+      const accounts = await getMT5Accounts();
+      setMT5Accounts(accounts);
+      if (accounts.length > 0 && !selectedAccount) {
+        setSelectedAccount(accounts[0].id.toString());
+      }
+    } catch (err) {
+      console.error('Failed to load MT5 accounts:', err);
+      // Fallback to mock data for demo purposes
+      setMT5Accounts([
+        { id: '1', account_number: '12345678', broker: 'Exness', status: 'connected' },
+        { id: '2', account_number: '87654321', broker: 'IC Markets', status: 'connected' }
+      ]);
+      if (!selectedAccount) {
+        setSelectedAccount('1');
+      }
+    }
+  };
+  
+  // Algorithm action handlers
+  const handleStartAlgorithm = async (algorithm: Algorithm) => {
+    if (!algorithm.selectedSymbol) {
+      setError('Please select a symbol before starting the algorithm');
+      return;
+    }
+
+    setActionLoading(prev => ({ ...prev, [algorithm.id]: true }));
+    try {
+      await algorithmsService.startAlgorithm(algorithm.id, algorithm.selectedSymbol);
+      await loadExecutions(); // Refresh executions
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to start algorithm');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [algorithm.id]: false }));
+    }
+  };
+
+  const handlePauseAlgorithm = async (algorithm: Algorithm) => {
+    if (!algorithm.executionId) return;
+
+    setActionLoading(prev => ({ ...prev, [algorithm.id]: true }));
+    try {
+      await algorithmsService.pauseAlgorithm(algorithm.executionId, algorithm.id);
+      await loadExecutions(); // Refresh executions
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to pause algorithm');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [algorithm.id]: false }));
+    }
+  };
+
+  const handleResumeAlgorithm = async (algorithm: Algorithm) => {
+    if (!algorithm.executionId) return;
+
+    setActionLoading(prev => ({ ...prev, [algorithm.id]: true }));
+    try {
+      await algorithmsService.resumeAlgorithm(algorithm.executionId, algorithm.id);
+      await loadExecutions(); // Refresh executions
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to resume algorithm');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [algorithm.id]: false }));
+    }
+  };
+
+  const handleStopAlgorithm = async (algorithm: Algorithm) => {
+    if (!algorithm.executionId) return;
+
+    setActionLoading(prev => ({ ...prev, [algorithm.id]: true }));
+    try {
+      await algorithmsService.stopAlgorithm(algorithm.executionId);
+      await loadExecutions(); // Refresh executions
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to stop algorithm');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [algorithm.id]: false }));
+    }
+  };
+
+  const handleSymbolChange = (algorithmId: string, symbol: string) => {
+    setAlgorithms(prev => prev.map(algo => 
+      algo.id === algorithmId 
+        ? { ...algo, selectedSymbol: symbol }
+        : algo
+    ));
   };
 
   const getAvailableAlgorithms = () => {
@@ -340,7 +193,7 @@ const Algorithms: React.FC = () => {
   };
 
   // Risk Management Functions
-  const updateRiskManagement = (algorithmId: string, riskSettings: Partial<RiskManagement>) => {
+  const updateRiskManagement = (algorithmId: string, riskSettings: Partial<Algorithm['riskManagement']>) => {
     setAlgorithms(prev => prev.map(algo => 
       algo.id === algorithmId 
         ? { ...algo, riskManagement: { ...algo.riskManagement, ...riskSettings } }
@@ -348,7 +201,7 @@ const Algorithms: React.FC = () => {
     ));
   };
 
-  const validateRiskSettings = (settings: RiskManagement): string[] => {
+  const validateRiskSettings = (settings: Algorithm['riskManagement']): string[] => {
     const errors: string[] = [];
     if (settings.maxLossPerTrade > 10) errors.push('Max loss per trade should not exceed 10%');
     if (settings.maxDailyLoss > 20) errors.push('Max daily loss should not exceed 20%');

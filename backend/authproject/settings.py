@@ -34,6 +34,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -186,3 +187,22 @@ PAYSTACK_WEBHOOK_SECRET = config('PAYSTACK_WEBHOOK_SECRET', default='')
 # Currency settings for South Africa
 DEFAULT_CURRENCY = 'ZAR'
 PAYSTACK_CURRENCY = 'ZAR'
+
+# ASGI Application
+ASGI_APPLICATION = 'authproject.asgi.application'
+
+# Channel Layers Configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
+
+# WebSocket Configuration
+WEBSOCKET_ACCEPT_ALL_ORIGINS = DEBUG  # Only for development
+
+# API Configuration
+BACKEND_API_URL = config('BACKEND_API_URL', default='http://127.0.0.1:8000/api')

@@ -1,17 +1,31 @@
 # Project Plus-Minus 🚀
 
-A full-stack authentication system built with Django REST Framework and React TypeScript, featuring comprehensive user management, password reset functionality, and modern UI design.
+A full-stack authentication system built with Django REST Framework and React TypeScript, featuring comprehensive user management, password reset functionality, modern UI design, and **real-time WebSocket infrastructure for MetaTrader 5 Expert Advisors**.
 
-## 🌟 Features
+## 🌟 Latest Updates
+
+### ✅ EA Authentication System - PRODUCTION READY (August 24, 2025)
+- **Two-Tier Authentication**: User JWT tokens + EA-specific tokens
+- **WebSocket Integration**: Real-time communication with trading algorithms
+- **Connection Monitoring**: Full logging and usage tracking for EA connections
+- **Secure Token Management**: SHA256 hashing, 30-day expiration, IP validation
+- **Production Testing**: Complete authentication flow validated and operational
+
+📖 **[Complete EA Implementation Guide](EA_AUTHENTICATION_IMPLEMENTATION_COMPLETE.md)**
+
+## 🌟 Core Features
 
 ### Backend (Django)
 - **JWT Authentication** with refresh tokens
+- **EA Token Authentication** for trading algorithms
+- **WebSocket Infrastructure** with Django Channels and ASGI
 - **Custom User Model** with extended profile fields
 - **Password Reset System** with secure token-based reset
 - **Enhanced Dashboard API** with user statistics
 - **CORS Configuration** for frontend integration
 - **Token Blacklisting** on logout for security
 - **RESTful API** endpoints for all authentication operations
+- **Real-time Communication** for MetaTrader 5 Expert Advisors
 
 ### Frontend (React + TypeScript)
 - **Modern UI Design** with responsive layout
@@ -27,40 +41,68 @@ A full-stack authentication system built with Django REST Framework and React Ty
   - Authentication context and protected routes
   - Beautiful gradient design
 
+### Expert Advisors (MetaTrader 5)
+- **Professional EA Collection** with 7+ trading strategies
+- **WebSocket Connectivity** for real-time backend communication
+- **EA Token Authentication** for secure algorithm connections
+- **Centralized Python Environment** for development
+- **AWS VPS Deployment** ready for 24/7 trading
+- **Comprehensive Testing** and validation tools
+
 ## 📁 Project Structure
 
 ```
 project-plusminus/
 ├── .venv/                          # Python virtual environment
-├── backend/                        # Django REST API
+├── backend/                        # Django REST API + WebSocket Server
 │   ├── manage.py
 │   ├── requirements.txt
 │   ├── db.sqlite3
 │   ├── authproject/               # Django project settings
 │   │   ├── settings.py
 │   │   ├── urls.py
+│   │   ├── asgi.py               # ASGI configuration for WebSocket
 │   │   └── ...
-│   └── authentication/            # Authentication app
-│       ├── models.py             # User model & password reset
-│       ├── views.py              # API endpoints
-│       ├── serializers.py        # Data serialization
-│       ├── urls.py               # URL routing
-│       └── migrations/           # Database migrations
-└── frontend/                      # React TypeScript app
-    ├── package.json
-    ├── src/
-    │   ├── components/           # Organized components
-    │   │   ├── Layout/          # Main layout wrapper
-    │   │   ├── Sidebar/         # Navigation sidebar
-    │   │   ├── ProtectedRoute/  # Route protection
-    │   │   └── common/          # Reusable components
-    │   ├── pages/               # Page components
-    │   ├── services/            # API services
-    │   │   ├── api/            # Authentication API
-    │   │   └── utils/          # Helper utilities
-    │   ├── contexts/            # React contexts
-    │   └── types/               # TypeScript types
-    └── public/                   # Static assets
+│   ├── authentication/            # Authentication app
+│   │   ├── models.py             # User model & password reset
+│   │   ├── ea_models.py          # EA authentication models
+│   │   ├── ea_views.py           # EA token management API
+│   │   ├── views.py              # API endpoints
+│   │   ├── serializers.py        # Data serialization
+│   │   ├── urls.py               # URL routing
+│   │   └── migrations/           # Database migrations
+│   └── mt5_integration/           # WebSocket consumer for EAs
+│       ├── consumers.py          # WebSocket consumer with EA auth
+│       ├── models.py             # Trading data models
+│       ├── routing.py            # WebSocket URL routing
+│       └── ...
+├── frontend/                      # React TypeScript app
+│   ├── package.json
+│   ├── src/
+│   │   ├── components/           # Organized components
+│   │   │   ├── Layout/          # Main layout wrapper
+│   │   │   ├── Sidebar/         # Navigation sidebar
+│   │   │   ├── ProtectedRoute/  # Route protection
+│   │   │   └── common/          # Reusable components
+│   │   ├── pages/               # Page components
+│   │   ├── services/            # API services
+│   │   │   ├── api/            # Authentication API
+│   │   │   └── utils/          # Helper utilities
+│   │   ├── contexts/            # React contexts
+│   │   └── types/               # TypeScript types
+│   └── public/                   # Static assets
+└── ALGORITHMSMT5EA/              # Expert Advisors Collection
+    ├── websocket_client.py       # WebSocket client for EAs
+    ├── test_ea_token_auth.py     # EA authentication test
+    ├── common_ea.py              # Shared EA utilities
+    ├── global_config.py          # Global configuration
+    ├── trailing_stop_ea/         # Risk-based trailing stop
+    ├── grid_trading_ea/          # Grid trading strategy
+    ├── trend_following_ea/       # Fast trend following
+    ├── hf_scalping_ea/           # High-frequency scalping
+    ├── liquidity_ea/             # Liquidity provider
+    ├── news_ea/                  # News-based trading
+    └── smart_hedging_ea/         # Smart hedging system
 ```
 
 ## 🚀 Getting Started

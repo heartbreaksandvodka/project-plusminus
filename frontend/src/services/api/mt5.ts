@@ -2,7 +2,13 @@ import api from './client';
 import { MT5Account, MT5AccountForm, MT5ConnectionTest, AlgorithmExecution } from '../../types/mt5';
 
 export const mt5Service = {
-  // Get user's MT5 account
+  // Get user's MT5 accounts (multiple accounts support)
+  getAccounts: async (): Promise<MT5Account[]> => {
+    const response = await api.get('/mt5/accounts/');
+    return response.data;
+  },
+
+  // Get user's MT5 account (single account - legacy)
   getAccount: async (): Promise<MT5Account> => {
     const response = await api.get('/mt5/account/');
     return response.data;
@@ -52,3 +58,11 @@ export const mt5Service = {
     return response.data;
   },
 };
+
+// Export individual functions for convenience
+export const getMT5Accounts = mt5Service.getAccounts;
+export const getMT5Account = mt5Service.getAccount;
+export const saveMT5Account = mt5Service.saveAccount;
+export const testMT5Connection = mt5Service.testConnection;
+
+export default mt5Service;
