@@ -1,143 +1,123 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from 'react';
+import { useSettings } from '../contexts/SettingsContext';
 import './SettingsPage.css';
 
-interface UserSettings {
-  notifications: boolean;
-  theme: 'light' | 'dark';
-  privacy: 'public' | 'private';
-}
-
 const SettingsPage: React.FC = () => {
-  const { token } = useAuth();
-  const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { settings, loading, updateSettings } = useSettings();
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  const fetchSettings = useCallback(async () => {
-    try {
-      const response = await fetch('http://localhost:8000/api/settings/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSettings(data);
-      } else if (response.status === 404) {
-        setError('Settings endpoint not found. Please check the API URL.');
-      } else {
-        setError('Failed to fetch settings. Please try again later.');
-      }
-    } catch (err) {
-      setError('An error occurred while fetching settings. Please check your network connection.');
-    }
-  }, [token]);
-
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
-    setSettings(prev => prev ? { ...prev, [name]: type === 'checkbox' ? checked : value } : null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    if (!settings) {
-      setError('Settings are not loaded yet.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch('http://localhost:8000/api/settings/', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settings),
-      });
-
-      if (response.ok) {
-        setSuccess('Settings updated successfully!');
-        const updatedSettings = await response.json();
-        setSettings(updatedSettings); // Update UI with the latest settings
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to update settings');
-      }
-    } catch (err) {
-      setError('An error occurred while updating settings');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!settings) {
     return <div className="settings-container">Loading settings...</div>;
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
+    
+    // Update settings immediately for better UX
+    const newValue = type === 'checkbox' ? checked : value;
+    handleSettingUpdate(name, newValue);
+  };
+
+  const handleSettingUpdate = async (field: string, value: any) => {
+    setIsSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await updateSettings({ [field]: value });
+      setSuccess('Setting updated successfully!');
+      setTimeout(() => setSuccess(''), 3000); // Clear success message after 3 seconds
+    } catch (err) {
+      setError('Failed to update setting. Please try again.');
+      setTimeout(() => setError(''), 5000); // Clear error message after 5 seconds
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="settings-container">
-      <h2>Settings</h2>
+      <h2>⚙️ Settings</h2>
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
-      <form onSubmit={handleSubmit} className="settings-form">
+      <div className="settings-form">
         <div className="form-group">
-          <label htmlFor="notifications">Enable Notifications</label>
-          <input
-            type="checkbox"
-            id="notifications"
-            name="notifications"
-            checked={settings.notifications}
-            onChange={handleInputChange}
-          />
+          <label htmlFor="notifications">
+            <span className="toggle-label">Enable Notifications</span>
+            <span className="toggle-description">
+              Receive email and app notifications about your account activity
+            </span>
+          </label>
+          <div className="toggle-switch">
+            <input
+              type="checkbox"
+              id="notifications"
+              name="notifications"
+              checked={settings.notifications}
+              onChange={handleInputChange}
+              className="toggle-input"
+              disabled={isSaving}
+            />
+            <label htmlFor="notifications" className="toggle-slider">
+              <span className="toggle-button"></span>
+            </label>
+          </div>
         </div>
 
         <div className="form-group">
-          <label htmlFor="theme">Theme</label>
-          <select
-            id="theme"
-            name="theme"
-            value={settings.theme}
-            onChange={handleInputChange}
-          >
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
+          <label htmlFor="show_ea_statistics">
+            <span className="toggle-label">Show EA Activity Statistics on Dashboard</span>
+            <span className="toggle-description">
+              Display detailed EA performance metrics and activity data on your dashboard
+            </span>
+          </label>
+          <div className="toggle-switch">
+            <input
+              type="checkbox"
+              id="show_ea_statistics"
+              name="show_ea_statistics"
+              checked={settings.show_ea_statistics}
+              onChange={handleInputChange}
+              className="toggle-input"
+              disabled={isSaving}
+            />
+            <label htmlFor="show_ea_statistics" className="toggle-slider">
+              <span className="toggle-button"></span>
+            </label>
+          </div>
         </div>
 
         <div className="form-group">
-          <label htmlFor="privacy">Account Privacy</label>
+          <label htmlFor="privacy">
+            <span className="toggle-label">Account Privacy</span>
+            <span className="toggle-description">
+              Control who can see your trading performance and activity
+            </span>
+          </label>
           <select
             id="privacy"
             name="privacy"
             value={settings.privacy}
             onChange={handleInputChange}
+            disabled={isSaving}
           >
             <option value="public">Public</option>
             <option value="private">Private</option>
           </select>
         </div>
 
-        <div className="form-actions">
-          <button type="submit" disabled={loading} className="save-button">
-            {loading ? 'Saving...' : 'Save Settings'}
-          </button>
-        </div>
-      </form>
+        {isSaving && (
+          <div className="saving-indicator">
+            <div className="saving-spinner"></div>
+            <span>Saving...</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

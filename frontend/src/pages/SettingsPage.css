@@ -11,53 +11,186 @@
 .settings-container h2 {
   text-align: center;
   margin-bottom: 20px;
+  color: #333;
+  font-size: 1.8rem;
 }
 
 .settings-form .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 25px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .settings-form label {
   display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.toggle-label {
+  font-size: 1.1rem;
+  color: #333;
   margin-bottom: 5px;
-  font-weight: bold;
+  display: block;
+}
+
+.toggle-description {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: normal;
+  display: block;
+  margin-top: 5px;
+  line-height: 1.4;
 }
 
 .settings-form input,
 .settings-form select {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.settings-form input:focus,
+.settings-form select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+  background-color: #ccc;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-button {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-input:checked + .toggle-slider {
+  background-color: #667eea;
+}
+
+.toggle-input:checked + .toggle-slider .toggle-button {
+  transform: translateX(30px);
+}
+
+.toggle-slider:hover {
+  background-color: #999;
+}
+
+.toggle-input:checked + .toggle-slider:hover {
+  background-color: #5a67d8;
 }
 
 .settings-form .form-actions {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 30px;
+  padding: 20px;
 }
 
 .settings-form .save-button {
-  padding: 10px 20px;
-  background-color: #007bff;
+  padding: 15px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.settings-form .save-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .settings-form .save-button:disabled {
-  background-color: #ccc;
+  background: #ccc;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .error-message {
-  color: red;
+  color: #e53e3e;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #fed7d7;
+  border-radius: 6px;
+  border: 1px solid #fc8181;
 }
 
 .success-message {
-  color: green;
+  color: #38a169;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #c6f6d5;
+  border-radius: 6px;
+  border: 1px solid #68d391;
+}
+
+/* Saving Indicator */
+.saving-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 15px;
+  background: #f7fafc;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.saving-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

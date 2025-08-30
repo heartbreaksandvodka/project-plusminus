@@ -6,6 +6,7 @@ from ..models import AlgorithmExecution, MT5Account
 from ..serializers import AlgorithmExecutionSerializer
 from ..mt5_service import MT5AlgorithmManager
 from ..api_views.mt5_authentication_views import get_mt5_account
+from datetime import datetime, timezone
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../ALGORITHMSMT5EA')))
@@ -24,6 +25,36 @@ def start_algorithm(request):
     if error:
         return Response(error, status=400)
     try:
+        # Stop any existing running instances of the same algorithm to prevent duplicates
+        existing_executions = AlgorithmExecution.objects.filter(
+            mt5_account=account,
+            algorithm_name=algorithm_name,
+            execution_status='running'
+        )
+        
+        stopped_count = 0
+        for existing_exec in existing_executions:
+            if existing_exec.pid:
+                # Try to stop the process
+                stop_result = MT5AlgorithmManager.stop_algorithm(existing_exec.pid)
+                if stop_result.get('status') == 'success':
+                    existing_exec.execution_status = 'stopped'
+                    existing_exec.stopped_at = datetime.now(timezone.utc)
+                    existing_exec.save()
+                    stopped_count += 1
+                else:
+                    # If process stop fails, still mark as stopped in database
+                    existing_exec.execution_status = 'stopped'
+                    existing_exec.stopped_at = datetime.now(timezone.utc)
+                    existing_exec.save()
+                    stopped_count += 1
+            else:
+                # No PID, just mark as stopped
+                existing_exec.execution_status = 'stopped'
+                existing_exec.stopped_at = datetime.now(timezone.utc)
+                existing_exec.save()
+                stopped_count += 1
+        
         # Start the EA script as a subprocess
         result = MT5AlgorithmManager.start_algorithm(account, algorithm_name, symbol)
         if result['status'] == 'success':
@@ -41,8 +72,12 @@ def start_algorithm(request):
                 'current_risk': risk_manager.calculate_current_risk(account)
             }
 
+            response_message = result['message']
+            if stopped_count > 0:
+                response_message += f" (Stopped {stopped_count} existing instance{'s' if stopped_count > 1 else ''})"
+
             return Response({
-                'message': result['message'],
+                'message': response_message,
                 'execution': AlgorithmExecutionSerializer(execution).data,
                 'risk_management': risk_details
             }, status=201)

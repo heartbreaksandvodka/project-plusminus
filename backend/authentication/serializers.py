@@ -5,7 +5,7 @@ from .models import User
 class UserSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('notifications', 'theme', 'privacy')
+        fields = ('notifications', 'privacy', 'show_ea_statistics')
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from .models import User, PasswordResetToken

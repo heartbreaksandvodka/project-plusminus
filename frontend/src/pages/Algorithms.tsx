@@ -7,42 +7,29 @@ import { getMT5Accounts } from '../services/api/mt5';
 
 const Algorithms: React.FC = () => {
   const [algorithms, setAlgorithms] = useState<Algorithm[]>([]);
-  const [executions, setExecutions] = useState<AlgorithmExecution[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [userSubscription, setUserSubscription] = useState<any>(null);
   const [mt5Accounts, setMT5Accounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   
   // Risk Management States
   const [showRiskManager, setShowRiskManager] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
 
   // Load initial data
   useEffect(() => {
-    loadData();
-    // Set up polling for real-time updates
-    const interval = setInterval(loadExecutions, 5000); // Poll every 5 seconds
-    return () => clearInterval(interval);
-  }, []);
+    const loadInitialData = async () => {
+      try {
+        await Promise.all([
+          loadAlgorithms(),
+          loadSubscription(),
+          loadMT5Accounts()
+        ]);
+      } catch (err) {
+        console.error('Error loading data:', err);
+      }
+    };
 
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await Promise.all([
-        loadAlgorithms(),
-        loadExecutions(),
-        loadSubscription(),
-        loadMT5Accounts()
-      ]);
-    } catch (err) {
-      setError('Failed to load data');
-      console.error('Error loading data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadInitialData();
+  }, []);
 
   const loadAlgorithms = async () => {
     try {
@@ -50,21 +37,6 @@ const Algorithms: React.FC = () => {
       setAlgorithms(availableAlgorithms);
     } catch (err) {
       console.error('Failed to load algorithms:', err);
-    }
-  };
-
-  const loadExecutions = async () => {
-    try {
-      const executionData = await algorithmsService.getExecutions();
-      setExecutions(executionData);
-      
-      // Merge execution data with algorithms
-      const mergedAlgorithms = algorithmsService.mergeAlgorithmsWithExecutions(algorithms, executionData);
-      if (algorithms.length > 0) {
-        setAlgorithms(mergedAlgorithms);
-      }
-    } catch (err) {
-      console.error('Failed to load executions:', err);
     }
   };
 
@@ -108,78 +80,6 @@ const Algorithms: React.FC = () => {
     }
   };
   
-  // Algorithm action handlers
-  const handleStartAlgorithm = async (algorithm: Algorithm) => {
-    if (!algorithm.selectedSymbol) {
-      setError('Please select a symbol before starting the algorithm');
-      return;
-    }
-
-    setActionLoading(prev => ({ ...prev, [algorithm.id]: true }));
-    try {
-      await algorithmsService.startAlgorithm(algorithm.id, algorithm.selectedSymbol);
-      await loadExecutions(); // Refresh executions
-      setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to start algorithm');
-    } finally {
-      setActionLoading(prev => ({ ...prev, [algorithm.id]: false }));
-    }
-  };
-
-  const handlePauseAlgorithm = async (algorithm: Algorithm) => {
-    if (!algorithm.executionId) return;
-
-    setActionLoading(prev => ({ ...prev, [algorithm.id]: true }));
-    try {
-      await algorithmsService.pauseAlgorithm(algorithm.executionId, algorithm.id);
-      await loadExecutions(); // Refresh executions
-      setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to pause algorithm');
-    } finally {
-      setActionLoading(prev => ({ ...prev, [algorithm.id]: false }));
-    }
-  };
-
-  const handleResumeAlgorithm = async (algorithm: Algorithm) => {
-    if (!algorithm.executionId) return;
-
-    setActionLoading(prev => ({ ...prev, [algorithm.id]: true }));
-    try {
-      await algorithmsService.resumeAlgorithm(algorithm.executionId, algorithm.id);
-      await loadExecutions(); // Refresh executions
-      setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to resume algorithm');
-    } finally {
-      setActionLoading(prev => ({ ...prev, [algorithm.id]: false }));
-    }
-  };
-
-  const handleStopAlgorithm = async (algorithm: Algorithm) => {
-    if (!algorithm.executionId) return;
-
-    setActionLoading(prev => ({ ...prev, [algorithm.id]: true }));
-    try {
-      await algorithmsService.stopAlgorithm(algorithm.executionId);
-      await loadExecutions(); // Refresh executions
-      setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to stop algorithm');
-    } finally {
-      setActionLoading(prev => ({ ...prev, [algorithm.id]: false }));
-    }
-  };
-
-  const handleSymbolChange = (algorithmId: string, symbol: string) => {
-    setAlgorithms(prev => prev.map(algo => 
-      algo.id === algorithmId 
-        ? { ...algo, selectedSymbol: symbol }
-        : algo
-    ));
-  };
-
   const getAvailableAlgorithms = () => {
     if (!userSubscription) return algorithms.slice(0, 2); // Basic plan
     

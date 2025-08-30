@@ -19,6 +19,7 @@ class User(AbstractUser):
     notifications = models.BooleanField(default=True)
     theme = models.CharField(max_length=10, choices=[('light', 'Light'), ('dark', 'Dark')], default='light')
     privacy = models.CharField(max_length=10, choices=[('public', 'Public'), ('private', 'Private')], default='public')
+    show_ea_statistics = models.BooleanField(default=True, help_text="Show EA activity statistics on dashboard")
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']

@@ -2,60 +2,44 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { statisticsService, AccountStatistics } from '../services/api/statistics';
 import { manualStatisticsService, ManualStatistics } from '../services/api/manualStatistics';
 import MT5AccountCard from '../components/MT5AccountCard';
+import EAGraphs from '../components/EAGraphs/EAGraphs';
 import './Dashboard.css';
-
-// Helper to format percentages to 1 decimal and max 3 significant digits (e.g., -22.4%)
-const formatPercent = (value: number | string | undefined | null) => {
-  if (value === undefined || value === null || value === '') return '0%';
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  if (isNaN(num)) return '0%';
-  // Clamp to -99.9% to 99.9% for display, show '>99.9%' or '<-99.9%' for out-of-range
-  if (num > 99.9) return '>99.9%';
-  if (num < -99.9) return '<-99.9%';
-  return `${num.toFixed(1)}%`;
-};
 
 const Dashboard: React.FC = () => {
   const [accountStats, setAccountStats] = useState<AccountStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [manualStats, setManualStats] = useState<ManualStatistics | null>(null);
   const { user } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        // Single API call to get ALL statistics (EA + Manual)
         const stats = await statisticsService.getAccountStatistics();
         setAccountStats(stats);
+        // Extract manual stats from the comprehensive response
+        setManualStats(stats.manual_stats);
       } catch (error) {
         setAccountStats(null);
-      }
-      try {
-        const manual = await manualStatisticsService.getManualStatistics();
-        setManualStats(manual);
-      } catch (error) {
         setManualStats(null);
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
-    // Optionally, poll every 30s for live stats
+    // Poll every 30s for live stats
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return new Date(dateString).toLocaleDateString();
   };
 
 
@@ -72,100 +56,170 @@ const Dashboard: React.FC = () => {
 
 
 
-  // Custom manual profitability calculation: profit/loss ratio as a percentage
-  let customManualProfitability: string = '0%';
-  let trades: any[] = [];
-  if (manualStats && Array.isArray((manualStats as any).trades)) {
-    trades = (manualStats as any).trades;
-  } else if (manualStats && Array.isArray((manualStats as any).sessions)) {
-    // Try to extract trades from sessions if present
-    trades = (manualStats as any).sessions.flatMap((s: any) => Array.isArray(s.trades) ? s.trades : []);
-  }
-  if (trades.length > 0) {
-    const profits = trades.filter((t: any) => typeof t.profit === 'number' && t.profit > 0).map((t: any) => t.profit);
-    const losses = trades.filter((t: any) => typeof t.profit === 'number' && t.profit < 0).map((t: any) => t.profit);
-    const sumProfits = profits.reduce((a: number, b: number) => a + b, 0);
-    const sumLosses = losses.reduce((a: number, b: number) => a + b, 0);
-    if (sumLosses !== 0) {
-      const ratio = (sumProfits / Math.abs(sumLosses)) * 100;
-      customManualProfitability = formatPercent(ratio);
-    } else if (sumProfits > 0) {
-      customManualProfitability = '100%';
-    } else {
-      customManualProfitability = '0%';
-    }
-  }
+  // Use backend-calculated values directly (no frontend recalculation needed)
+  const manualProfitability = manualStats?.profitability_percent 
+    ? `${manualStats.profitability_percent}%` 
+    : '0%';
 
   return (
     <div className="dashboard-container">
       <main className="dashboard-content">
 
-        {/* Account Statistics (Live) */}
-        <div className="dashboard-card">
-          <h2>📊 Account Statistics</h2>
-          <div className="stats-grid">
-            <div className="stat-item">
-              <div className="stat-value">{accountStats?.ea_activity.length || 0}</div>
-              <div className="stat-label">Active EAs</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{accountStats?.running_eas || 0}</div>
-              <div className="stat-label">Running EAs</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{formatPercent(accountStats?.profitability_percent)}</div>
-              <div className="stat-label">Profitability</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{accountStats?.total_trades || 0}</div>
-              <div className="stat-label">Total Trades</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{formatPercent(accountStats?.win_rate)}</div>
-              <div className="stat-label">Win Rate</div>
-            </div>
-          </div>
-          <div style={{ marginTop: '20px' }}>
-            <p><strong>EA Activity:</strong></p>
-            <ul>
-              {accountStats?.ea_activity.map((ea, idx) => (
-                <li key={idx}>
-                  <strong>{ea.ea_name}</strong>: {ea.active_duration} (Started: {new Date(ea.start_time).toLocaleString()})
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Manual/Non-EA Account Statistics (Live) */}
-          <div style={{ marginTop: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-            <h3>📝 Manual/Non-EA Account Statistics (Live)</h3>
+        {/* EA Statistics - Show based on user setting */}
+        {settings?.show_ea_statistics && (
+          <div className="dashboard-card">
+            <h2>📊 EA Statistics</h2>
             <div className="stats-grid">
               <div className="stat-item">
-                <div className="stat-value">{manualStats?.total_trades || 0}</div>
-                <div className="stat-label">Manual Trades</div>
+                <div className="stat-value">{accountStats?.ea_activity.length}</div>
+                <div className="stat-label">Active EAs</div>
               </div>
               <div className="stat-item">
-                <div className="stat-value">{customManualProfitability}</div>
-                <div className="stat-label">Manual Profitability</div>
+                <div className="stat-value">{accountStats?.running_eas}</div>
+                <div className="stat-label">Running EAs</div>
               </div>
               <div className="stat-item">
-                <div className="stat-value">{formatPercent(manualStats?.win_rate)}</div>
-                <div className="stat-label">Manual Win Rate</div>
+                <div className="stat-value">{accountStats?.ea_profitability_percent}%</div>
+                <div className="stat-label">EA Profitability</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{accountStats?.ea_total_trades}</div>
+                <div className="stat-label">EA Trades</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{accountStats?.ea_win_rate}%</div>
+                <div className="stat-label">EA Win Rate</div>
               </div>
             </div>
-            <div style={{ marginTop: '20px' }}>
-              <p><strong>Manual Trading Sessions:</strong></p>
-              <ul>
-                {manualStats?.sessions.slice(0, 3).map((session, idx) => (
-                  <li key={idx}>
-                    <strong>Session:</strong> {new Date(session.session_start).toLocaleString()} - {session.session_end ? new Date(session.session_end).toLocaleString() : 'Ongoing'}<br />
-                    <strong>Trades:</strong> {session.trades_executed} | <strong>P/L:</strong> {session.profit_loss}
+          </div>
+        )}
+
+        {/* EA Activity - Show based on user setting */}
+        {settings?.show_ea_statistics && (
+          <div className="dashboard-card">
+            <h2>⚡ EA Activity</h2>
+            {accountStats?.ea_activity && accountStats.ea_activity.length > 0 ? (
+              <ul className="ea-activity-list">
+                {accountStats.ea_activity.map((ea, idx) => (
+                  <li key={idx} className="ea-activity-item">
+                    <span className="ea-name">{ea.ea_name}</span>
+                    <div className="ea-duration">Duration: {ea.active_duration}</div>
+                    <div className="ea-start-time">Started: {new Date(ea.start_time).toLocaleString()}</div>
                   </li>
                 ))}
               </ul>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state-icon">🤖</div>
+                <h4>No Active EAs</h4>
+                <p>Your Expert Advisors are currently not running</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Manual Trading Statistics - Show based on user setting */}
+        {settings?.show_ea_statistics && (
+          <div className="dashboard-card">
+            <h2>📝 Manual Trading Statistics</h2>
+            <div className="stats-grid">
+              <div className="stat-item">
+                <div className="stat-value">{manualStats?.total_trades}</div>
+                <div className="stat-label">Manual Trades</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{manualProfitability}</div>
+                <div className="stat-label">Manual Profitability</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-value">{manualStats?.win_rate}%</div>
+                <div className="stat-label">Manual Win Rate</div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Manual Trading Sessions - Show based on user setting */}
+        {settings?.show_ea_statistics && (
+          <div className="dashboard-card">
+            <h2>📝 Manual Trading Sessions</h2>
+            {manualStats?.sessions && manualStats.sessions.length > 0 ? (
+              <ul className="trading-sessions-list">
+                {manualStats.sessions.slice(0, 3).map((session, idx) => (
+                  <li key={idx} className="trading-session-item">
+                    <div className="session-header">
+                      <span className="session-label">Trading Session #{idx + 1}</span>
+                      <span className={`session-status ${session.session_end ? 'completed' : 'ongoing'}`}>
+                        {session.session_end ? 'Completed' : 'Ongoing'}
+                      </span>
+                    </div>
+                    <div className="session-timeframe">
+                      <strong>Time:</strong> {new Date(session.session_start).toLocaleString()} 
+                      {session.session_end && (
+                        <> - {new Date(session.session_end).toLocaleString()}</>
+                      )}
+                    </div>
+                    <div className="session-metrics">
+                      <div className="session-metric">
+                        <span className="metric-label">Trades:</span>
+                        <span className="metric-value">{session.trades_executed}</span>
+                      </div>
+                      <div className="session-metric">
+                        <span className="metric-label">P/L:</span>
+                        <span className={`metric-value ${
+                          session.profit_loss >= 0 ? 'positive' : 'negative'
+                        }`}>
+                          {session.profit_loss}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state-icon">📊</div>
+                <h4>No Manual Trading Sessions</h4>
+                <p>You haven't recorded any manual trading sessions yet</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Charts Section - Show when EA statistics are enabled */}
+        {settings?.show_ea_statistics && (
+          <div className="dashboard-card charts-card">
+            <h2>📈 Trading Analytics & Charts</h2>
+            <EAGraphs accountStats={accountStats} manualStats={manualStats} />
+          </div>
+        )}
+
+        {/* Show message when EA statistics are hidden */}
+        {settings?.show_ea_statistics === false && (
+          <div className="dashboard-card">
+            <h2>📊 Account Statistics</h2>
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '20px' }}>👁️‍🗨️</div>
+              <h3 style={{ color: '#333', marginBottom: '10px' }}>EA Statistics Hidden</h3>
+              <p>EA activity statistics are currently hidden.</p>
+              <button 
+                onClick={() => navigate('/settings')}
+                style={{
+                  marginTop: '15px',
+                  padding: '10px 20px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Show in Settings
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* User Information */}
         <div className="dashboard-card">

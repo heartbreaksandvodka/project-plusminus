@@ -1,0 +1,156 @@
+/* EAGraphs Component Styles */
+.ea-graphs-container {
+  width: 100%;
+  margin: 20px 0;
+}
+
+.graphs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.graph-card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.graph-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+}
+
+.graph-card h3 {
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+.chart-wrapper canvas {
+  max-height: 300px !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .graphs-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .graph-card {
+    padding: 20px;
+  }
+  
+  .chart-wrapper {
+    height: 250px;
+  }
+  
+  .chart-wrapper canvas {
+    max-height: 250px !important;
+  }
+}
+
+/* Chart Color Schemes */
+.graph-card:nth-child(1) {
+  border-left: 4px solid #667eea;
+}
+
+.graph-card:nth-child(2) {
+  border-left: 4px solid #ef4444;
+}
+
+.graph-card:nth-child(3) {
+  border-left: 4px solid #22c55e;
+}
+
+.graph-card:nth-child(4) {
+  border-left: 4px solid #f59e0b;
+}
+
+/* Loading State */
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Empty State */
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #999;
+  text-align: center;
+}
+
+.chart-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.chart-empty h4 {
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.chart-empty p {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* Animation for charts */
+.graph-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar for chart containers */
+.chart-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.chart-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chart-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.chart-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

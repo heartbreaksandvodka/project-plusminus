@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { ProtectedRoute, Layout } from './components';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -19,15 +20,16 @@ import './App.css';
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            {/* Public routes without sidebar */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+      <SettingsProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              {/* Public routes without sidebar */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Protected routes with sidebar layout */}
             <Route
@@ -104,6 +106,7 @@ function App() {
           </Routes>
         </div>
       </Router>
+      </SettingsProvider>
     </AuthProvider>
   );
 }

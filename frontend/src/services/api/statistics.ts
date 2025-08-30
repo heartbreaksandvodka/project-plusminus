@@ -15,16 +15,24 @@ export interface ManualStats {
 }
 
 export interface AccountStatistics {
+  // EA Statistics
   ea_activity: Array<{
     ea_name: string;
     active_duration: string;
     start_time: string;
   }>;
+  ea_profitability_percent: number;
+  ea_total_trades: number;
+  ea_win_rate: number;
+  running_eas: number;
+  
+  // Manual Trading Statistics
+  manual_stats: ManualStats;
+  
+  // Legacy fields for backward compatibility
   profitability_percent: number;
   total_trades: number;
   win_rate: number;
-  running_eas: number;
-  manual_stats: ManualStats;
 }
 
 export const statisticsService = {
