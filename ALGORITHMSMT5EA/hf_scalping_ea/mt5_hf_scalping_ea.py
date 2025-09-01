@@ -38,7 +38,7 @@ try:
 except ImportError:
     print("Local config not found, using global config only")
 # Import common EA utilities
-from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, initialize_mt5_dynamic, get_symbol_info, get_current_price, check_pause_flag
 
 # Setup logging
 logging.basicConfig(
@@ -106,7 +106,24 @@ class HighFrequencyScalpingEA:
         logging.info("High-Frequency Scalping EA initialized with global config")
         
     def initialize_mt5(self) -> bool:
-        # Use shared utility
+        """Initialize MT5 connection using dynamic credentials (preferred) or fallback"""
+        # Try dynamic initialization first (environment variables or database)
+        try:
+            success = initialize_mt5_dynamic()
+            if success:
+                symbol_info = get_symbol_info(self.symbol)
+                if symbol_info is None:
+                    logging.error(f"Symbol {self.symbol} not found")
+                    return False
+                self.symbol_info = symbol_info
+                self.point = symbol_info.point
+                self.digits = symbol_info.digits
+                logging.info(f"Symbol info: {self.symbol}, Point: {self.point}, Digits: {self.digits}")
+                return True
+        except Exception as e:
+            print(f"Dynamic initialization failed: {e}")
+        
+        # Fallback to explicit credentials
         result = initialize_mt5(self.login, self.password, self.server)
         if result:
             symbol_info = get_symbol_info(self.symbol)

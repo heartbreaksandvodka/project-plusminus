@@ -20,7 +20,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from global_config import get_account_credentials, get_risk_settings
 from risk_manager import RiskManager
 # Import common EA utilities
-from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, initialize_mt5_dynamic, get_symbol_info, get_current_price, check_pause_flag
 
 class TrendFollowingEA:
     def __init__(self, symbol="EURUSD", lot_size=0.1, magic_number=98765,
@@ -69,7 +69,20 @@ class TrendFollowingEA:
         self.risk_manager = RiskManager(f"TrendFollowing_{symbol}")
     
     def initialize_mt5(self):
-        """Initialize MT5 connection using common utility"""
+        """Initialize MT5 connection using dynamic credentials (preferred) or fallback"""
+        # Try dynamic initialization first (environment variables or database)
+        try:
+            success = initialize_mt5_dynamic()
+            if success:
+                return True
+        except Exception as e:
+            print(f"Dynamic initialization failed: {e}")
+        
+        # Fallback to explicit credentials if provided
+        if self.login and self.password and self.server:
+            return initialize_mt5(self.login, self.password, self.server)
+        
+        # Final fallback to global config
         return initialize_mt5(self.login, self.password, self.server)
     
     def get_symbol_info(self):

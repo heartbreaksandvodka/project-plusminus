@@ -2,7 +2,7 @@
 # Modify these settings according to your trading preferences
 
 # Account Information (Exness Demo Account)
-LOGIN = 210715557
+LOGIN = 211047814
 PASSWORD = "Johannes@0"
 SERVER = "Exness-MT5Trial9"
 

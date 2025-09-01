@@ -2,7 +2,7 @@
 # Modify these settings according to your trading preferences
 
 # Account Information (Update with your broker details)
-LOGIN = 210715557
+LOGIN = 211047814
 PASSWORD = "Johannes@0"
 SERVER = "Exness-MT5Trial9"
 

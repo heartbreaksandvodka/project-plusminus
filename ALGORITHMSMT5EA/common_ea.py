@@ -8,6 +8,20 @@ from datetime import datetime
 from typing import Optional, Dict, Any, Callable
 from websocket_client import create_algorithm_websocket_client
 
+# Import dynamic credentials
+try:
+    from dynamic_credentials import get_mt5_credentials_from_db, initialize_mt5_dynamic
+    DYNAMIC_CREDENTIALS_AVAILABLE = True
+except ImportError:
+    DYNAMIC_CREDENTIALS_AVAILABLE = False
+    print("Warning: Dynamic credentials not available, falling back to global config")
+
+# Fallback to global config if dynamic credentials are not available
+try:
+    from global_config import get_account_credentials
+except ImportError:
+    print("Warning: Global config not available")
+
 
 class EnhancedEABase:
     """Enhanced base class for EAs with WebSocket integration"""
@@ -293,7 +307,71 @@ class EnhancedEABase:
 
 # Legacy functions for backward compatibility
 
+# Enhanced initialization functions
+
+def initialize_mt5_dynamic():
+    """
+    Initialize MT5 with dynamic credentials from database or environment variables
+    This is the preferred method for EAs started through the web interface
+    """
+    if DYNAMIC_CREDENTIALS_AVAILABLE:
+        try:
+            from dynamic_credentials import get_mt5_credentials_from_db
+            
+            # Get credentials with priority: Environment Variables > Database > Global Config
+            credentials = get_mt5_credentials_from_db()
+            
+            print(f"Attempting to connect to MT5 with account: {credentials['login']} on server: {credentials['server']}")
+            
+            # Initialize MT5
+            if not mt5.initialize():
+                error_msg = f"Failed to initialize MT5: {mt5.last_error()}"
+                print(error_msg)
+                return False
+            
+            # Login to account
+            if not mt5.login(
+                login=credentials['login'],
+                password=credentials['password'],
+                server=credentials['server']
+            ):
+                error_msg = f"Failed to login to MT5 account {credentials['login']}: {mt5.last_error()}"
+                print(error_msg)
+                mt5.shutdown()
+                return False
+            
+            # Get account info to verify connection
+            account_info = mt5.account_info()
+            if account_info is None:
+                error_msg = "Connected but could not retrieve account info"
+                print(error_msg)
+                mt5.shutdown()
+                return False
+            
+            print(f"✅ Successfully connected to MT5")
+            print(f"Account: {account_info.login}")
+            print(f"Balance: {account_info.balance}")
+            print(f"Server: {account_info.server}")
+            print(f"Broker: {credentials.get('broker_name', 'Unknown')}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"Dynamic initialization failed: {e}")
+            print("Falling back to legacy method...")
+    
+    # Fallback to global config
+    try:
+        creds = get_account_credentials()
+        return initialize_mt5(creds['login'], creds['password'], creds['server'])
+    except Exception as e:
+        print(f"Failed to initialize MT5: {e}")
+        return False
+
 def initialize_mt5(login, password, server):
+    """
+    Legacy MT5 initialization function with explicit parameters
+    """
     if not mt5.initialize():
         logging.error("MetaTrader 5 initialization failed")
         print("MetaTrader 5 initialization failed")

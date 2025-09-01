@@ -11,7 +11,7 @@ that are imported by all EAs for consistency.
 # =============================================================================
 # ACCOUNT CREDENTIALS (Update with your broker details)
 # =============================================================================
-MT5_LOGIN = 210715557
+MT5_LOGIN = 211047814
 MT5_PASSWORD = "Johannes@0"
 MT5_SERVER = "Exness-MT5Trial9"
 
@@ -99,12 +99,25 @@ RISK_BASED_SL_PERCENT = 10.0       # Risk-based stop loss as % of balance
 # =============================================================================
 
 def get_account_credentials():
-    """Get MT5 account credentials"""
-    return {
-        'login': MT5_LOGIN,
-        'password': MT5_PASSWORD,
-        'server': MT5_SERVER
-    }
+    """
+    Get MT5 account credentials - now supports dynamic loading from database
+    """
+    try:
+        # Try to get dynamic credentials from database first
+        from dynamic_credentials import get_mt5_credentials_from_db
+        creds = get_mt5_credentials_from_db()
+        return {
+            'login': creds['login'],
+            'password': creds['password'],
+            'server': creds['server']
+        }
+    except Exception:
+        # Fallback to hardcoded values if dynamic loading fails
+        return {
+            'login': MT5_LOGIN,
+            'password': MT5_PASSWORD,
+            'server': MT5_SERVER
+        }
 
 def get_risk_settings():
     """Get global risk management settings"""

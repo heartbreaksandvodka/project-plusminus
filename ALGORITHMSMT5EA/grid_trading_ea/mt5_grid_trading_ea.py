@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from global_config import get_account_credentials, get_risk_settings
 from risk_manager import RiskManager
 # Import common EA utilities
-from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
+from common_ea import initialize_mt5_dynamic, initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
 
 class GridTradingEA:
     def __init__(self, symbol="EURUSD", grid_distance=50, 
@@ -65,8 +65,11 @@ class GridTradingEA:
         self.base_price = None  # Reference price for grid
         
     def initialize_mt5(self):
-        # Use shared utility
-        return initialize_mt5(self.login, self.password, self.server)
+        # Try dynamic credentials first, fallback to stored credentials
+        if not initialize_mt5_dynamic():
+            # Fallback to explicit credentials if dynamic fails
+            return initialize_mt5(self.login, self.password, self.server)
+        return True
     
     def get_symbol_info(self):
         # Use shared utility

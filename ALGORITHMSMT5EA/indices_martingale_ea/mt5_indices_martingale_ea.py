@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from global_config import get_account_credentials, get_risk_settings
 from risk_manager import RiskManager
 # Import common EA utilities
-from ALGORITHMSMT5EA.common_ea import initialize_mt5, get_symbol_info, get_current_price, check_pause_flag
+from ALGORITHMSMT5EA.common_ea import initialize_mt5, initialize_mt5_dynamic, get_symbol_info, get_current_price, check_pause_flag
 
 class IndicesMartingaleEA:
     def __init__(self, symbol="US500", base_lot=0.1, magic_number=12345, grid_step_points=100, max_trades=6):
@@ -55,7 +55,16 @@ class IndicesMartingaleEA:
         self.log_file = "martingale_ea.log"
 
     def initialize_mt5(self):
-        # Use shared utility
+        """Initialize MT5 connection using dynamic credentials (preferred) or fallback"""
+        # Try dynamic initialization first (environment variables or database)
+        try:
+            success = initialize_mt5_dynamic()
+            if success:
+                return True
+        except Exception as e:
+            print(f"Dynamic initialization failed: {e}")
+        
+        # Fallback to explicit credentials
         return initialize_mt5(self.login, self.password, self.server)
 
     def get_symbol_info(self):

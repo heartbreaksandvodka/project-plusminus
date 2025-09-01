@@ -321,7 +321,7 @@ const MT5AccountCard: React.FC = () => {
                 value={formData.account_number}
                 onChange={handleChange}
                 required
-                placeholder="Enter your MT5 account number"
+                placeholder="e.g., 211047814"
               />
             </div>
 
@@ -334,7 +334,7 @@ const MT5AccountCard: React.FC = () => {
                 value={formData.broker_name}
                 onChange={handleChange}
                 required
-                placeholder="e.g., XM, FXCM, IG"
+                placeholder="e.g., Exness"
               />
             </div>
 
@@ -347,7 +347,7 @@ const MT5AccountCard: React.FC = () => {
                 value={formData.server}
                 onChange={handleChange}
                 required
-                placeholder="e.g., XM-Real, XM-Demo"
+                placeholder="e.g., Exness-MT5Trial9"
               />
             </div>
 

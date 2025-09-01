@@ -4,6 +4,10 @@ import logging
 from datetime import datetime
 from typing import Dict, Optional, Tuple
 from .models import MT5Account
+from .mt5_auto_manager import MT5SmartConnection, MT5AutoManager
+
+# Alias for backward compatibility with tests
+MT5TerminalManager = MT5AutoManager
 import subprocess
 import signal
 import os
@@ -19,65 +23,20 @@ class MT5ConnectionManager:
     @staticmethod
     def test_connection(account_number: str, password: str, server: str) -> Tuple[bool, Dict]:
         """
-        Test MT5 connection with provided credentials
+        Test MT5 connection with automated terminal management
         Returns: (success: bool, data: dict)
         """
         try:
-            # Initialize MT5
-            if not mt5.initialize():
-                error = mt5.last_error()
-                logger.error(f"MT5 initialization failed: {error}")
-                return False, {
-                    'error': 'Failed to initialize MetaTrader 5',
-                    'details': f"Error code: {error[0]}, Description: {error[1]}" if error else "Unknown error"
-                }
+            # Use smart connection that handles automation
+            success, result = MT5SmartConnection.connect(account_number, password, server)
             
-            # Attempt login
-            authorized = mt5.login(
-                login=int(account_number),
-                password=password,
-                server=server
-            )
-            
-            if not authorized:
-                error = mt5.last_error()
-                mt5.shutdown()
-                logger.error(f"MT5 login failed for account {account_number}: {error}")
-                return False, {
-                    'error': 'Login failed',
-                    'details': f"Error code: {error[0]}, Description: {error[1]}" if error else "Invalid credentials"
-                }
-            
-            # Get account info
-            account_info = mt5.account_info()
-            if account_info is None:
-                mt5.shutdown()
-                return False, {'error': 'Failed to retrieve account information'}
-            
-            # Get terminal info
-            terminal_info = mt5.terminal_info()
-            
-            # Logout and shutdown
-            mt5.shutdown()
-            
-            return True, {
-                'account_info': {
-                    'login': account_info.login,
-                    'trade_mode': account_info.trade_mode,
-                    'balance': account_info.balance,
-                    'equity': account_info.equity,
-                    'margin': account_info.margin,
-                    'currency': account_info.currency,
-                    'company': account_info.company,
-                    'server': account_info.server,
-                },
-                'terminal_info': {
-                    'build': terminal_info.build if terminal_info else None,
-                    'name': terminal_info.name if terminal_info else None,
-                } if terminal_info else None,
-                'connection_time': datetime.now().isoformat()
-            }
-            
+            if success:
+                logger.info("MT5 connection test successful")
+                return True, result
+            else:
+                logger.warning("MT5 connection test failed")
+                return False, result
+                
         except Exception as e:
             logger.error(f"MT5 connection test failed: {str(e)}")
             try:
@@ -86,7 +45,8 @@ class MT5ConnectionManager:
                 pass
             return False, {
                 'error': 'Connection test failed',
-                'details': str(e)
+                'details': str(e),
+                'solution': 'Check MT5 installation and try again'
             }
     
     @staticmethod
@@ -196,6 +156,7 @@ class MT5AlgorithmManager:
     def start_algorithm(mt5_account: MT5Account, algorithm_name: str, symbol: str) -> Dict:
         """
         Actually launch the EA script as a subprocess and store its PID.
+        Passes the user's MT5 account credentials as environment variables.
         """
         try:
             ea_script_path = MT5AlgorithmManager._get_ea_script_path(algorithm_name)
@@ -211,6 +172,13 @@ class MT5AlgorithmManager:
             env = os.environ.copy()
             existing_pp = env.get('PYTHONPATH', '')
             env['PYTHONPATH'] = (project_root + (os.pathsep + existing_pp if existing_pp else ''))
+
+            # Pass MT5 account credentials as environment variables for the EA to use
+            env['MT5_ACCOUNT_NUMBER'] = str(mt5_account.account_number)
+            env['MT5_PASSWORD'] = mt5_account.get_password()
+            env['MT5_SERVER'] = mt5_account.server
+            env['MT5_BROKER_NAME'] = mt5_account.broker_name
+            env['MT5_ACCOUNT_ID'] = str(mt5_account.id)
 
             # Prefer current interpreter
             python_exec = sys.executable or 'python'
