@@ -1,31 +1,43 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+// API base URLs for different services
+const DJANGO_API_BASE = 'http://localhost:8000/api';
+const EA_SERVICE_BASE = 'http://localhost:8001';
 
-// Create axios instance
+// Django Backend API client (primary)
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: DJANGO_API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add token to requests
-api.interceptors.request.use(
-  (config) => {
-    const tokens = localStorage.getItem('tokens');
-    if (tokens) {
-      const { access } = JSON.parse(tokens);
-      config.headers.Authorization = `Bearer ${access}`;
-    }
-    return config;
+// EA Service API client (secondary)
+const eaServiceApi = axios.create({
+  baseURL: EA_SERVICE_BASE,
+  headers: {
+    'Content-Type': 'application/json',
   },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+});
 
-// Response interceptor to handle token refresh
+// Request interceptor to add token to requests (both services)
+const addAuthInterceptor = (apiInstance: any) => {
+  apiInstance.interceptors.request.use(
+    (config: any) => {
+      const tokens = localStorage.getItem('tokens');
+      if (tokens) {
+        const { access } = JSON.parse(tokens);
+        config.headers.Authorization = `Bearer ${access}`;
+      }
+      return config;
+    },
+    (error: any) => {
+      return Promise.reject(error);
+    }
+  );
+};
+
+// Response interceptor for token refresh (Django only)
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -39,7 +51,7 @@ api.interceptors.response.use(
         const { refresh } = JSON.parse(tokens);
         
         try {
-          const response = await axios.post(`${API_BASE_URL}/token/refresh/`, {
+          const response = await axios.post(`${DJANGO_API_BASE}/token/refresh/`, {
             refresh,
           });
           
@@ -65,4 +77,9 @@ api.interceptors.response.use(
   }
 );
 
+// Add auth interceptors to both clients
+addAuthInterceptor(api);
+addAuthInterceptor(eaServiceApi);
+
 export default api;
+export { eaServiceApi, DJANGO_API_BASE, EA_SERVICE_BASE };
