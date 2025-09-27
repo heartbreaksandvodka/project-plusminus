@@ -345,10 +345,12 @@ class EAManager:
             # env['MT5_ACCOUNT_ID'] = str(execution.mt5_account_id)
             # env['MT5_BROKER_NAME'] = account_data.get('broker_name', 'Unknown')
             
-            # Launch process
-            cmd = [sys.executable, str(script_path)]
+            # Add symbol to environment variables
             if execution.symbol:
-                cmd.append(execution.symbol)
+                env['MT5_SYMBOL'] = execution.symbol
+            
+            # Launch process using module command from project root
+            cmd = [sys.executable, '-m', f'ALGORITHMSMT5EA.{execution.algorithm_name}.mt5_{execution.algorithm_name}']
             
             process = subprocess.Popen(
                 cmd,

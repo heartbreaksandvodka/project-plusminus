@@ -235,10 +235,10 @@ def test_connection():
 
 def main():
     """Main function to run the Risk-Based Trailing Stop Manager"""
-    # Use global configuration
-    SYMBOL = "BTCUSD"
-    RISK_PERCENTAGE = TRAILING_STEP_PERCENT  # From global config
-    MAGIC_NUMBER = 0  # 0 = manage all trades, or specific number for EA trades only
+    # Get configuration from environment variables or use defaults
+    SYMBOL = os.getenv('MT5_SYMBOL', 'EURUSD')  # Dynamic symbol from environment
+    RISK_PERCENTAGE = float(os.getenv('MT5_RISK_PERCENT', TRAILING_STEP_PERCENT))  # Dynamic risk percentage
+    MAGIC_NUMBER = int(os.getenv('MT5_MAGIC_NUMBER', 0))  # 0 = manage all trades, or specific number for EA trades only
     
     print(f"🔧 Using Global Configuration:")
     print(f"  Account: {MT5_LOGIN} on {MT5_SERVER}")

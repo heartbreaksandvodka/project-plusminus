@@ -31,3 +31,5 @@ uvicorn==0.24.0
 cryptography==45.0.5
 pypaystack2
 websockets==12.0
+psutil
+pydantic-settings
